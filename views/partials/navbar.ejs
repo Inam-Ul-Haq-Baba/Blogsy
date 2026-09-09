@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/output.css">
+    <link rel="icon" href="favicon.png" type="image/x-icon">
+
+    <title>Blogsy</title>
+</head>
+
+<body class="font-serif">
+    <nav class="flex justify-between items-center px-10 py-1 border-b-2">
+
+        <img class="w-20 sm:w-28 md:w-32 lg:w-40" src="/logo.png" alt="Logo Not Found">
+
+        <ul class="hidden sm:flex justify-end items-center px-8 gap-10 text-lg font-semibold ">
+            <li><a href="/">Home</a></li>
+            <li><a href="/about">About</a></li>
+            
+        </ul>
+        <a href="/create"
+            class="bg-green-600 text-xs sm:text-sm md:text-base text-white font-semibold rounded-md px-2 py-1">✏️Write a
+            Blog &nbsp;</a>
+
+        <div class="hamburger inline-block sm:hidden cursor-pointer">
+            <div class="h-1 w-8 my-1 bg-black"></div>
+            <div class="h-1 w-8 my-1 bg-black"></div>
+            <div class="h-1 w-8 my-1 bg-black"></div>
+        </div>
+    </nav>
+    <div id="mobile-menu" class="hidden sm:hidden">
+        <ul class="flex flex-col items-center gap-4 py-4 bg-white border-b-2">
+            <li><a href="/">Home</a></li>
+            <li><a href="/about">About</a></li>
+            <li><a href="/categories">Categories</a></li>
+        </ul>
+    </div>
+
+    

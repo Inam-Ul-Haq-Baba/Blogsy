@@ -1,0 +1,15 @@
+<div class="card w-full h-2/3 md:h-1/3 rounded-xl flex flex-col">
+    <div id="blog-image" class="w-full flex justify-center ">
+        <img src="<%= post.image %>" class="rounded-t-xl w-full h-28 md:h-32 lg:h-44" alt="Image Not Found">
+    </div>
+    <span class=" text-xs text-green-700  mx-3 mt-2"><%= post.category %></span>
+    <p class="card-title text-md font-extrabold mx-3">
+        <%= post.title %>
+    </p>
+    <p class="text-xs text-gray-600 mx-3"><%= post.description %></p>
+    <div class="details flex justify-between text-[12px] px-2 my-3">
+        <span class="text-black"><%= post.author %></span>
+        <span class="text-black"><%= post.date %></span>
+        <a href="/posts/<%= post.id %>" class="text-green-700 bg-green-200 px-1 rounded-md">Read More</a>
+    </div>
+</div>
