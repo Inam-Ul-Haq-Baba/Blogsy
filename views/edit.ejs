@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/output.css">
+    <title>Edit Blog - Blogsy</title>
+</head>
+
+<body class="font-serif bg-slate-50">
+
+    <%- include("partials/navbar.ejs") %>
+
+        <main class="max-w-3xl mx-auto px-5 py-10">
+
+            <h1 class="text-3xl font-bold mb-2">Edit Your Blog</h1>
+            <p class="text-slate-600 mb-8">Update your post and save your changes.</p>
+
+            <form action="/posts/<%= post.id %>/edit" method="POST" enctype="multipart/form-data"
+                class="bg-white p-6 sm:p-8 rounded-xl shadow-sm border border-slate-200">
+
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+                <div class="mb-5">
+                    <label for="title" class="block font-semibold mb-2">Title</label>
+                    <input type="text" name="title" id="title" value="<%= post.title %>" required
+                        class="w-full border border-slate-300 rounded-lg px-4 py-3">
+                </div>
+
+
+                <div class="mb-5">
+                    <label for="category" class="block font-semibold mb-2">
+                        Category <span class="text-red-500">*</span>
+                    </label>
+
+                    <select name="category" id="category" required
+                        class="w-full border border-slate-300 rounded-lg px-4 py-3 bg-white">
+                        <option value="" disabled selected>
+                                Select a category
+                            </option>
+                        <option value="Technology" <%=post.category==="Technology" ? "selected" : "" %>>Technology
+                        </option>
+                        <option value="Programming" <%=post.category==="Programming" ? "selected" : "" %>>Programming
+                        </option>
+                        <option value="Web Development" <%=post.category==="Web Development" ? "selected" : "" %>>Web
+                            Development</option>
+                        <option value="Mobile Development" <%=post.category==="Mobile Development" ? "selected" : "" %>
+                            >Mobile Development</option>
+                        <option value="Artificial Intelligence" <%=post.category==="Artificial Intelligence"
+                            ? "selected" : "" %>>Artificial Intelligence</option>
+                        <option value="Data Science" <%=post.category==="Data Science" ? "selected" : "" %>>Data Science
+                        </option>
+                        <option value="Cybersecurity" <%=post.category==="Cybersecurity" ? "selected" : "" %>
+                            >Cybersecurity</option>
+                        <option value="Databases" <%=post.category==="Databases" ? "selected" : "" %>>Databases</option>
+                        <option value="Software Engineering" <%=post.category==="Software Engineering" ? "selected" : ""
+                            %>>Software Engineering</option>
+                        <option value="Cloud Computing" <%=post.category==="Cloud Computing" ? "selected" : "" %>>Cloud
+                            Computing</option>
+                        <option value="DevOps" <%=post.category==="DevOps" ? "selected" : "" %>>DevOps</option>
+                        <option value="Education" <%=post.category==="Education" ? "selected" : "" %>>Education</option>
+                        <option value="Career &amp; Jobs" <%=post.category==="Career & Jobs" ? "selected" : "" %>>Career
+                            &amp; Jobs</option>
+                        <option value="Freelancing" <%=post.category==="Freelancing" ? "selected" : "" %>>Freelancing
+                        </option>
+                        <option value="Productivity" <%=post.category==="Productivity" ? "selected" : "" %>>Productivity
+                        </option>
+                        <option value="Personal Growth" <%=post.category==="Personal Growth" ? "selected" : "" %>
+                            >Personal Growth</option>
+                        <option value="Business &amp; Finance" <%=post.category==="Business & Finance" ? "selected" : ""
+                            %>>Business &amp; Finance</option>
+                        <option value="Lifestyle" <%=post.category==="Lifestyle" ? "selected" : "" %>>Lifestyle</option>
+                        <option value="Travel" <%=post.category==="Travel" ? "selected" : "" %>>Travel</option>
+                        <option value="Reviews" <%=post.category==="Reviews" ? "selected" : "" %>>Reviews</option>
+                        <option value="Tutorials" <%=post.category==="Tutorials" ? "selected" : "" %>>Tutorials</option>
+                        <option value="News &amp; Updates" <%=post.category==="News & Updates" ? "selected" : "" %>>News
+                            &amp; Updates</option>
+                        <option value="Other" <%=post.category==="Other" ? "selected" : "" %>>Other</option>
+                    </select>
+                </div>
+
+
+                <div class="mb-5">
+                    <label for="description" class="block font-semibold mb-2">Description</label>
+                    <textarea name="description" id="description" rows="3" required
+                        class="w-full border border-slate-300 rounded-lg px-4 py-3"><%= post.description %></textarea>
+                </div>
+
+                <div class="mb-5">
+                    <label for="content" class="block font-semibold mb-2">Content</label>
+                    <textarea name="content" id="content" rows="8" required
+                        class="w-full border border-slate-300 rounded-lg px-4 py-3"><%= post.content %></textarea>
+                </div>
+
+                <div class="mb-6">
+                    <label for="image" class="block font-semibold mb-2">Change Image (optional)</label>
+
+                    <% if (post.image) { %>
+                        <img src="<%= post.image %>" alt="Current blog image"
+                            class="w-full max-h-64 object-cover rounded-lg mb-3">
+                        <% } %>
+
+                            <input type="file" name="image" id="image" accept="image/*"
+                                class="w-full border border-slate-300 rounded-lg p-3">
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <button type="submit"
+                        class="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-lg">
+                        Save Changes
+                    </button>
+
+                    <a href="/my-blogs"
+                        class="flex-1 text-center bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold py-3 rounded-lg">
+                        Cancel
+                    </a>
+                </div>
+
+            </form>
+
+        </main>
+
+</body>
+
+</html>

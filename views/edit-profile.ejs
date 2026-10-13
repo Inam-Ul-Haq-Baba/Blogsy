@@ -1,0 +1,252 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Profile | Blogsy</title>
+    <link rel="stylesheet" href="/css/output.css">
+</head>
+
+<body class="bg-slate-50 text-slate-800">
+
+    <%- include("partials/navbar.ejs") %>
+
+    <main class="max-w-2xl mx-auto px-4 py-10">
+        <div class="bg-white rounded-2xl border border-slate-200 p-8">
+
+            <h1 class="text-2xl font-bold text-slate-900 mb-2">
+                Edit Profile
+            </h1>
+
+            
+            <% if (typeof error !== "undefined" && error) { %>
+                <div class="mb-5 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+                    <%= error %>
+                </div>
+            <% } %>
+
+
+            <p class="text-slate-500 mb-6">
+                Tell readers a little about yourself.
+            </p>
+
+            <form
+                action="/profile/edit"
+                method="POST"
+                enctype="multipart/form-data"
+                class="space-y-5"
+            >
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+                <!-- Profile Picture -->
+                <div>
+                    <label class="block text-sm font-semibold mb-2">
+                        Profile Picture
+                    </label>
+
+                    <% if (profile.profile_picture) { %>
+                        <img
+                            src="<%= profile.profile_picture %>"
+                            alt="Current profile picture"
+                            class="w-24 h-24 rounded-full object-cover border border-slate-200 mb-3"
+                        >
+                    <% } %>
+
+                    <input
+                        type="file"
+                        id="profile_picture"
+                        name="profile_picture"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        class="w-full rounded-lg border border-slate-300 p-3"
+                    >
+
+                    <p class="text-xs text-slate-500 mt-1">
+                        JPG, PNG, WEBP, or GIF. Maximum size: 5 MB.
+                    </p>
+                </div>
+
+                <!-- Full Name -->
+                <div>
+                    <label for="name" class="block text-sm font-semibold mb-2">
+                        Full Name
+                    </label>
+
+                    <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        value="<%= profile.name || '' %>"
+                        required
+                        maxlength="100"
+                        class="w-full rounded-lg border border-slate-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500"
+                    >
+                </div>
+
+                <!-- Username -->
+                <div>
+                    <label for="username" class="block text-sm font-semibold mb-2">
+                        Username
+                    </label>
+
+                    <input
+                        type="text"
+                        id="username"
+                        name="username"
+                        value="<%= profile.username || '' %>"
+                        maxlength="30"
+                        pattern="[A-Za-z0-9_]+"
+                        placeholder="e.g. inam_dev"
+                        class="w-full rounded-lg border border-slate-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500"
+                    >
+
+                    <p class="text-xs text-slate-500 mt-1">
+                        Letters, numbers, and underscores only.
+                    </p>
+                </div>
+
+                <!-- Email -->
+                <div>
+                    <label for="email" class="block text-sm font-semibold mb-2">
+                        Email Address
+                    </label>
+
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        value="<%= profile.email || '' %>"
+                        required
+                        maxlength="255"
+                        class="w-full rounded-lg border border-slate-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500"
+                    >
+                </div>
+
+                <!-- Bio -->
+                <div>
+                    <label for="bio" class="block text-sm font-semibold mb-2">
+                        About Me
+                    </label>
+
+                    <textarea
+                        id="bio"
+                        name="bio"
+                        rows="4"
+                        maxlength="500"
+                        placeholder="Introduce yourself to the Blogsy community..."
+                        class="w-full rounded-lg border border-slate-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500"
+                    ><%= profile.bio || '' %></textarea>
+
+                    <p class="text-xs text-slate-500 mt-1">
+                        Maximum 500 characters.
+                    </p>
+                </div>
+
+                <!-- Occupation -->
+                <div>
+                    <label for="occupation" class="block text-sm font-semibold mb-2">
+                        Occupation
+                    </label>
+
+                    <input
+                        type="text"
+                        id="occupation"
+                        name="occupation"
+                        value="<%= profile.occupation || '' %>"
+                        maxlength="100"
+                        placeholder="e.g. Student, Developer, Writer"
+                        class="w-full rounded-lg border border-slate-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500"
+                    >
+                </div>
+
+                <!-- Location -->
+                <div>
+                    <label for="location" class="block text-sm font-semibold mb-2">
+                        Location (Optional)
+                    </label>
+
+                    <input
+                        type="text"
+                        id="location"
+                        name="location"
+                        value="<%= profile.location || '' %>"
+                        maxlength="100"
+                        placeholder="e.g. Jammu, India"
+                        class="w-full rounded-lg border border-slate-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500"
+                    >
+                </div>
+
+                <!-- Website -->
+                <div>
+                    <label for="website" class="block text-sm font-semibold mb-2">
+                        Website or Portfolio
+                    </label>
+
+                    <input
+                        type="url"
+                        id="website"
+                        name="website"
+                        value="<%= profile.website || '' %>"
+                        maxlength="255"
+                        placeholder="https://example.com"
+                        class="w-full rounded-lg border border-slate-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500"
+                    >
+                </div>
+
+                <!-- GitHub -->
+                <div>
+                    <label for="github_url" class="block text-sm font-semibold mb-2">
+                        GitHub Profile
+                    </label>
+
+                    <input
+                        type="url"
+                        id="github_url"
+                        name="github_url"
+                        value="<%= profile.github_url || '' %>"
+                        maxlength="255"
+                        placeholder="https://github.com/username"
+                        class="w-full rounded-lg border border-slate-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500"
+                    >
+                </div>
+
+                <!-- LinkedIn -->
+                <div>
+                    <label for="linkedin_url" class="block text-sm font-semibold mb-2">
+                        LinkedIn Profile
+                    </label>
+
+                    <input
+                        type="url"
+                        id="linkedin_url"
+                        name="linkedin_url"
+                        value="<%= profile.linkedin_url || '' %>"
+                        maxlength="255"
+                        placeholder="https://www.linkedin.com/in/username"
+                        class="w-full rounded-lg border border-slate-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500"
+                    >
+                </div>
+
+                <!-- Buttons -->
+                <div class="flex flex-wrap justify-center gap-3 pt-4">
+                    <button
+                        type="submit"
+                        class="rounded-lg bg-green-600 px-5 py-2 font-semibold text-white hover:bg-green-700"
+                    >
+                        Save Changes
+                    </button>
+
+                    <a
+                        href="/profile/<%= profile.id %>"
+                        class="rounded-lg border border-slate-300 px-5 py-2 font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                        Cancel
+                    </a>
+                </div>
+
+            </form>
+        </div>
+    </main>
+
+</body>
+</html>

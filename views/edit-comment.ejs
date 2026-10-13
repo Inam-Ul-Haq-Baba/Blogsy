@@ -1,0 +1,66 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Comment | Blogsy</title>
+    <link rel="stylesheet" href="/css/output.css">
+</head>
+
+<body class="bg-slate-50 text-slate-800">
+
+    <%- include("partials/navbar.ejs") %>
+
+    <main class="max-w-2xl mx-auto px-4 py-10">
+        <div class="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8">
+
+            <h1 class="text-2xl font-bold text-slate-900 mb-2">
+                Edit Comment
+            </h1>
+
+            <p class="text-sm text-slate-500 mb-6">
+                On blog: <span class="font-semibold"><%= comment.post_title %></span>
+            </p>
+
+            <form action="/comments/<%= comment.id %>/edit"
+                  method="POST">
+
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+                <label for="content"
+                       class="block text-sm font-semibold mb-2">
+                    Your Comment <span class="text-red-500">*</span>
+                </label>
+
+                <textarea
+                    id="content"
+                    name="content"
+                    rows="5"
+                    maxlength="2000"
+                    required
+                    class="w-full rounded-lg border border-slate-300 p-3 focus:outline-none focus:ring-2 focus:ring-green-500"
+                ><%= comment.content %></textarea>
+
+                <div class="flex gap-3 mt-5">
+                    <button
+                        type="submit"
+                        class="rounded-lg bg-green-600 px-5 py-2.5 font-semibold text-white hover:bg-green-700"
+                    >
+                        Save Changes
+                    </button>
+
+                    <a
+                        href="/posts/<%= comment.post_id %>"
+                        class="rounded-lg border border-slate-300 px-5 py-2.5 font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                        Cancel
+                    </a>
+                </div>
+
+            </form>
+        </div>
+    </main>
+
+</body>
+</html>

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/output.css">
+    <title>Login - Blogsy</title>
+</head>
+
+<body class="font-serif bg-slate-50">
+
+    <%- include("partials/navbar.ejs") %>
+
+        <main class="min-h-[80vh] flex items-center justify-center px-4 py-12">
+
+            <div class="bg-white w-full max-w-md p-8 rounded-xl shadow-lg">
+
+                <h1 class="text-3xl font-bold text-center mb-2">
+                    Welcome
+                </h1>
+
+                <p class="text-gray-500 text-center mb-8">
+                    Login to your Blogsy account.
+                </p>
+
+
+                <% if (typeof error !=="undefined" && error) { %>
+                    <div class="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+                        role="alert">
+                        <%= error %>
+                    </div>
+                <% } %>
+
+
+                <% if (typeof success !=="undefined" && success) { %>
+                    <div class="mb-5 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700"
+                        role="status">
+                        <%= success %>
+                    </div>
+                <% } %>
+
+
+
+                                <form action="/login" method="POST">
+
+                                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+                                    <!-- Email -->
+                                    <div class="mb-5">
+                                        <label for="email" class="block text-sm font-semibold text-slate-700 mb-2">
+                                            Email
+                                        </label>
+
+                                        <input type="email" id="email" name="email" placeholder="Enter your email"
+                                            required
+                                            class="w-full border border-slate-300 rounded-lg px-4 py-3 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100">
+                                    </div>
+
+                                    <!-- Password -->
+                                    <div class="mb-6">
+                                        <label for="password" class="block text-sm font-semibold text-slate-700 mb-2">
+                                            Password
+                                        </label>
+
+                                        <input type="password" id="password" name="password"
+                                            placeholder="Enter your password" required
+                                            class="w-full border border-slate-300 rounded-lg px-4 py-3 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100">
+                                    </div>
+
+                                    <button type="submit"
+                                        class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-lg transition">
+                                        Login
+                                    </button>
+
+                                </form>
+
+                                <p class="text-center text-gray-600 mt-6">
+                                    Don't have an account?
+                                    <a href="/register" class="text-green-600 font-semibold hover:underline">
+                                        Create Account
+                                    </a>
+                                </p>
+
+            </div>
+
+        </main>
+
+</body>
+
+</html>

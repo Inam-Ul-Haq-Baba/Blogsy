@@ -1,0 +1,66 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= category %> Blogs | Blogsy</title>
+    <link rel="stylesheet" href="/css/output.css">
+</head>
+
+<body class="bg-slate-50 text-slate-800">
+
+    <%- include("partials/navbar.ejs") %>
+
+    <main class="max-w-6xl mx-auto px-4 py-10">
+
+        <div class="mb-8">
+            <p class="text-sm font-semibold text-green-600 uppercase tracking-wide">
+                Blog Category
+            </p>
+
+            <h1 class="mt-2 text-3xl font-bold text-slate-900">
+                <%= category %> Blogs
+            </h1>
+
+            <p class="mt-2 text-slate-500">
+                Explore blogs published in this category.
+            </p>
+        </div>
+
+        <% if (posts.length === 0) { %>
+            <div class="rounded-xl border border-slate-200 bg-white p-8 text-center">
+                <h2 class="text-xl font-semibold text-slate-800">
+                    No blogs found
+                </h2>
+
+                <p class="mt-2 text-slate-500">
+                    There are no blogs in this category yet.
+                </p>
+
+                <a href="/"
+                   class="inline-block mt-5 rounded-lg bg-green-600 px-5 py-2 text-white font-semibold hover:bg-green-700">
+                    Browse All Blogs
+                </a>
+            </div>
+        <% } else { %>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <% posts.forEach(post => { %>
+                    <%- include("partials/card.ejs", { post }) %>
+                <% }) %>
+            </div>
+        <% } %>
+
+        <a href="/"
+           class="inline-block mt-8 text-green-700 font-semibold hover:underline">
+            ← Back to Home
+        </a>
+
+    </main>
+
+    <%- include("partials/footer.ejs") %>
+
+    <script src="/js/script.js"></script>
+
+</body>
+</html>

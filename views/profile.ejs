@@ -1,0 +1,158 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= profile.name %> | Blogsy</title>
+    <link rel="stylesheet" href="/css/output.css">
+</head>
+
+<body class="bg-slate-50 text-slate-800">
+
+    <%- include("partials/navbar.ejs") %>
+
+    <main class="max-w-6xl mx-auto px-4 py-10">
+
+        <% if (typeof success !== "undefined" && success) { %>
+            <div class="mb-5 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700"
+                 role="status">
+                <%= success %>
+            </div>
+        <% } %>
+
+        <!-- Profile header -->
+        <section class="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 mb-8">
+            <div class="flex flex-col sm:flex-row items-center sm:items-start gap-5">
+
+                <% if (profile.profile_picture) { %>
+                    <img
+                        src="<%= profile.profile_picture %>"
+                        alt="<%= profile.name %>'s profile picture"
+                        class="w-28 h-28 rounded-full object-cover border-4 border-green-50 shadow-sm"
+                    >
+                <% } else { %>
+                    <div class="w-28 h-28 shrink-0 rounded-full bg-green-100 text-green-700
+                                flex items-center justify-center text-4xl font-bold">
+                        <%= profile.name.charAt(0).toUpperCase() %>
+                    </div>
+                <% } %>
+
+                <div class="flex-1 text-center sm:text-left min-w-0">
+                    <h1 class="text-3xl font-bold text-slate-900 break-words">
+                        <%= profile.name %>
+                    </h1>
+
+                    <% if (profile.username) { %>
+                        <p class="text-sm text-green-700 mt-1">
+                            @<%= profile.username %>
+                        </p>
+                    <% } %>
+
+                    <% if (profile.occupation) { %>
+                        <p class="text-slate-600 mt-3">
+                            <%= profile.occupation %>
+                        </p>
+                    <% } %>
+
+                    <% if (profile.bio) { %>
+                        <p class="text-slate-600 mt-4 whitespace-pre-line leading-relaxed">
+                            <%= profile.bio %>
+                        </p>
+                    <% } else { %>
+                        <p class="text-slate-400 mt-4 text-sm">
+                            This author hasn't added a bio yet.
+                        </p>
+                    <% } %>
+
+                    <% if (profile.location) { %>
+                        <p class="text-sm text-slate-500 mt-3">
+                            <span aria-hidden="true">📍</span>
+                            <%= profile.location %>
+                        </p>
+                    <% } %>
+
+                    <% if (profile.website || profile.github_url || profile.linkedin_url) { %>
+                        <div class="flex flex-wrap justify-center sm:justify-start gap-4 mt-4 text-sm">
+                            <% if (profile.website) { %>
+                                <a href="<%= profile.website %>"
+                                   target="_blank" rel="noopener noreferrer"
+                                   class="text-green-700 hover:underline">
+                                    Website
+                                </a>
+                            <% } %>
+
+                            <% if (profile.github_url) { %>
+                                <a href="<%= profile.github_url %>"
+                                   target="_blank" rel="noopener noreferrer"
+                                   class="text-green-700 hover:underline">
+                                    GitHub
+                                </a>
+                            <% } %>
+
+                            <% if (profile.linkedin_url) { %>
+                                <a href="<%= profile.linkedin_url %>"
+                                   target="_blank" rel="noopener noreferrer"
+                                   class="text-green-700 hover:underline">
+                                    LinkedIn
+                                </a>
+                            <% } %>
+                        </div>
+                    <% } %>
+
+                    <% if (typeof user !== "undefined" && user && user.id === profile.id) { %>
+                        <a href="/profile/edit"
+                           class="inline-block mt-5 rounded-lg bg-green-600 px-5 py-2 text-sm font-semibold text-white hover:bg-green-700 transition">
+                            Edit Profile
+                        </a>
+                    <% } %>
+                </div>
+            </div>
+        </section>
+
+        <!-- Profile statistics -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+
+            <div class="bg-white border border-slate-200 rounded-xl p-5">
+                <p class="text-sm text-slate-500">Published Blogs</p>
+                <p class="text-3xl font-bold text-slate-900 mt-2">
+                    <%= stats.totalBlogs %>
+                </p>
+            </div>
+
+            <div class="bg-white border border-slate-200 rounded-xl p-5">
+                <p class="text-sm text-slate-500">Total Views</p>
+                <p class="text-3xl font-bold text-slate-900 mt-2">
+                    <%= stats.totalViews %>
+                </p>
+            </div>
+
+        </section>
+
+        <!-- Published blogs -->
+        <section>
+            <h2 class="text-2xl font-bold text-slate-900 mb-6">
+                Published Blogs
+            </h2>
+
+            <% if (posts.length === 0) { %>
+                <div class="bg-white border border-slate-200 rounded-xl p-8 text-center">
+                    <p class="text-slate-600">
+                        This user hasn't published any blogs yet.
+                    </p>
+                </div>
+            <% } else { %>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <% posts.forEach(post => { %>
+                        <%- include("partials/card.ejs", { post }) %>
+                    <% }) %>
+                </div>
+            <% } %>
+        </section>
+
+    </main>
+
+    <script src="/js/script.js"></script>
+</body>
+</html>

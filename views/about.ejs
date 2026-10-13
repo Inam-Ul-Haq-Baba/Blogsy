@@ -184,38 +184,32 @@
         </h2>
 
         <p class="text-slate-600 mb-8">
-            Explore different topics and discover something interesting.
+            From technology and programming to travel and personal growth, discover ideas, share your knowledge, and explore topics that inspire you.
         </p>
 
+            <div class="flex flex-wrap justify-center gap-3">
 
-        <div class="flex flex-wrap justify-center gap-3">
+                <% const categories = [
+                    "Technology",
+                    "Programming",
+                    "Travel",
+                    "Lifestyle",
+                    "Education",
+                    "Personal Growth",
+                    "Others"
+                ]; %>
 
-            <span class="px-4 py-2 bg-green-100 text-green-700 rounded-full text-sm font-semibold">
-                Technology
-            </span>
+                <% categories.forEach(category => { %>
+                    <button
+                        type="button"
+                        data-category="<%= category %>"
+                        class="category-pill px-4 py-2 bg-green-100 text-green-700 rounded-full text-sm font-semibold hover:bg-green-200 hover:text-green-800 transition duration-200 cursor-pointer">
+                        <%= category %>
+                    </button>
+                <% }); %>
 
-            <span class="px-4 py-2 bg-green-100 text-green-700 rounded-full text-sm font-semibold">
-                Programming
-            </span>
-
-            <span class="px-4 py-2 bg-green-100 text-green-700 rounded-full text-sm font-semibold">
-                Travel
-            </span>
-
-            <span class="px-4 py-2 bg-green-100 text-green-700 rounded-full text-sm font-semibold">
-                Lifestyle
-            </span>
-
-            <span class="px-4 py-2 bg-green-100 text-green-700 rounded-full text-sm font-semibold">
-                Education
-            </span>
-
-            <span class="px-4 py-2 bg-green-100 text-green-700 rounded-full text-sm font-semibold">
-                Personal Growth
-            </span>
-
-        </div>
-
+            </div>
+            
     </section>
 
 
@@ -251,48 +245,7 @@
     </section>
 
 
-    <!-- Footer -->
-    <footer class="bg-white py-8 px-5 border-t">
-
-        <div class="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
-
-            <div class="text-center sm:text-left">
-
-                <h3 class="text-xl font-bold text-slate-900">
-                    Blog<span class="text-green-600">sy.</span>
-                </h3>
-
-                <p class="text-sm text-slate-500">
-                    Where ideas come alive.
-                </p>
-
-            </div>
-
-
-            <div class="flex gap-6 text-sm font-semibold text-slate-600">
-
-                <a href="/" class="hover:text-green-600">
-                    Home
-                </a>
-
-                <a href="/about" class="hover:text-green-600">
-                    About
-                </a>
-
-                <a href="/create" class="hover:text-green-600">
-                    Write
-                </a>
-
-            </div>
-
-        </div>
-
-
-        <p class="text-center text-xs text-slate-400 mt-6">
-            © 2026 Blogsy. All rights reserved.
-        </p>
-
-    </footer>
+   <%- include("partials/footer.ejs") %>
 
 
     <script src="/js/script.js"></script>

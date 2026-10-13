@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/output.css">
+    <title>Register - Blogsy</title>
+</head>
+
+<body class="font-serif bg-slate-50">
+
+    <%- include("partials/navbar.ejs") %>
+
+        <main class="min-h-[80vh] flex items-center justify-center px-4 py-12">
+
+            <div class="bg-white w-full max-w-md p-8 rounded-xl shadow-lg">
+
+                <h1 class="text-3xl font-bold text-center mb-2">
+                    Create an Account
+                </h1>
+
+                <p class="text-gray-500 text-center mb-8">
+                    Join Blogsy and start sharing your ideas.
+                </p>
+
+
+                <% if (typeof error !=="undefined" && error) { %>
+                    <div class="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+                        role="alert">
+                        <%= error %>
+                    </div>
+                    <% } %>
+
+
+                        <form action="/register" method="POST">
+
+                            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+                            <!-- Name -->
+                            <div class="mb-5">
+                                <label for="name" class="block text-sm font-semibold text-slate-700 mb-2">
+                                    Name
+                                </label>
+
+                                <input type="text" id="name" name="name" placeholder="Enter your name" required
+                                    class="w-full border border-slate-300 rounded-lg px-4 py-3 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100">
+                            </div>
+
+                            <!-- UserName -->
+                            <div class="mb-4">
+                                <label for="username" class="block text-sm font-medium mb-1">
+                                    Username
+                                </label>
+
+                                <input
+                                    type="text"
+                                    id="username"
+                                    name="username"
+                                    value="<%= typeof username !== 'undefined' ? username : '' %>"
+                                    required
+                                    minlength="3"
+                                    maxlength="30"
+                                    pattern="[A-Za-z0-9_]+"
+                                    title="Use 3–30 letters, numbers, or underscores."
+                                    placeholder="e.g. inam_dev"
+                                    class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                                >
+                            </div>
+
+                            <!-- Email -->
+                            <div class="mb-5">
+                                <label for="email" class="block text-sm font-semibold text-slate-700 mb-2">
+                                    Email
+                                </label>
+
+                                <input type="email" id="email" name="email" placeholder="Enter your email" required
+                                    class="w-full border border-slate-300 rounded-lg px-4 py-3 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100">
+                            </div>
+
+                            <!-- Password -->
+                            <div class="mb-6">
+                                <label for="password" class="block text-sm font-semibold text-slate-700 mb-2">
+                                    Password
+                                </label>
+
+                                <input type="password" id="password" name="password" placeholder="Create a password"
+                                    required
+                                    class="w-full border border-slate-300 rounded-lg px-4 py-3 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100">
+                            </div>
+
+                            <button type="submit"
+                                class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-lg transition">
+                                Create Account
+                            </button>
+
+                        </form>
+
+                        <p class="text-center text-gray-600 mt-6">
+                            Already have an account?
+                            <a href="/login" class="text-green-600 font-semibold hover:underline">
+                                Login
+                            </a>
+                        </p>
+
+            </div>
+
+        </main>
+
+</body>
+
+</html>
