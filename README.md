@@ -1,112 +1,94 @@
-# Blogsy
+# Blogsy — Where Ideas Come Alive ✍️
 
-### Where ideas come alive ✍️
+Blogsy is a responsive full-stack blog web application where users can create, publish, discover, and interact with blog posts. It includes user authentication, profile management, likes, comments, search, and image uploads.
 
-Blogsy is a simple and responsive blog web application where users can create and read blog posts.
-
-This project was built as a hands-on learning project to practice frontend and backend web development using **HTML, Tailwind CSS, JavaScript, Node.js, Express.js and EJS**.
-
----
+Built as a hands-on project to strengthen my frontend and backend development skills.
 
 ## 📸 Screenshots
 
 ### 🏠 Homepage
-
-![Blogsy Homepage](Screenshots/homepage.png)
+![Blogsy Homepage](screenshots/homepage.png)
 
 ### 📖 Individual Blog Post
-
-![Blog Post](Screenshots/blog-post.png)
+![Blog Post](screenshots/blog-post.png)
 
 ### ✍️ Create a Blog
-
-![Create Blog](Screenshots/create-blog.png)
+![Create Blog](screenshots/create-blog.png)
 
 ### ℹ️ About Page
-
-![About Page](Screenshots/about.png)
-
----
+![About Page](screenshots/about.png)
 
 ## 🚀 Features
 
-- Responsive homepage
-- Responsive navigation bar
-- Mobile hamburger menu
-- Hero section
-- Blog cards
-- View individual blog posts
-- Dynamic blog URLs using post IDs
-- Create and publish new blog posts
-- EJS templates and partials
-- Tailwind CSS styling
-- Express.js routing
-- Responsive design for different screen sizes
-
----
+- Responsive homepage with trending blog posts
+- User registration, login, and logout
+- Secure password hashing using bcrypt
+- Forgot password and email-based password reset
+- Create, edit, and delete blog posts
+- Upload and display blog images
+- Individual blog pages with dynamic URLs
+- Like and unlike blog posts
+- Comments with create, edit, and delete functionality
+- User profiles with profile editing
+- Search blogs by title, category, and author
+- Browse blogs by category
+- My Blogs page for managing personal posts
+- View counts for blog posts
+- Pagination for browsing posts
+- Responsive navigation bar with a mobile menu
+- CSRF protection and session management
 
 ## 🛠️ Tech Stack
 
 | Technology | Purpose |
-|------------|---------|
+|---|---|
 | HTML | Page structure |
 | Tailwind CSS | Styling and responsive design |
 | JavaScript | Client-side functionality |
-| Node.js | Runtime environment |
-| Express.js | Server and routing |
-| EJS | Dynamic HTML templating |
-
----
+| Node.js | Server-side runtime |
+| Express.js | Routing and backend logic |
+| EJS | Dynamic server-side rendering |
+| PostgreSQL | Database for users, posts, comments, likes, and views |
+| bcrypt | Password hashing |
+| Nodemailer | Sending password-reset emails |
+| Multer | Handling image uploads |
+| Git & GitHub | Version control |
 
 ## 📁 Project Structure
 
 ```text
 Blogsy/
-│
-├── data/
-│   └── post.js
-│
+├── db/
+│   └── db.js
 ├── public/
 │   ├── css/
 │   │   └── output.css
 │   ├── js/
-│   │   └── script.js
-│   ├── favicon.png
-│   ├── logo.png
-│   ├── logo_with_tag.png
-│   ├── hero_img.png
-│   ├── webdev.jpg
-│   ├── node.jpg
-│   └── habits.jpg
-│
-├── screenshots/
-│   ├── homepage.png
-│   ├── blog-post.png
-│   ├── create-blog.png
-│   └── about.png
-│
+│   ├── images/
+│   └── uploads/
 ├── src/
 │   └── input.css
-│
+├── utils/
+│   └── mailer.js
 ├── views/
 │   ├── partials/
-│   │   ├── card.ejs
-│   │   └── navbar.ejs
-│   │
 │   ├── index.ejs
-│   ├── about.ejs
+│   ├── post.ejs
 │   ├── create.ejs
-│   └── post.ejs
-│
+│   ├── login.ejs
+│   ├── register.ejs
+│   ├── forgot-password.ejs
+│   ├── reset-password.ejs
+│   └── ...
+├── .env.example
 ├── .gitignore
 ├── app.js
 ├── package.json
 ├── package-lock.json
-├── tailwind.config.js
-└── README.md
+└── tailwind.config.js
 ```
 
----
+*The structure above summarizes the main project folders. Your actual project may contain additional files and templates.*
 
 ## ⚙️ Installation
 
@@ -128,134 +110,114 @@ cd Blogsy
 npm install
 ```
 
-This installs all the dependencies listed in `package.json`.
+### 4. Configure environment variables
 
----
+Create a `.env` file in the project root and configure the required values:
 
-## ▶️ Running the Project
+```dotenv
+PORT=3000
 
-Blogsy requires **two terminals** to run because Tailwind CSS and the Node.js server run separately.
+DB_USER=your_database_user
+DB_HOST=localhost
+DB_NAME=your_database_name
+DB_PASSWORD=your_database_password
+DB_PORT=5432
 
-### Terminal 1 — Start Tailwind CSS
+SESSION_SECRET=your_session_secret
 
-Run:
+EMAIL_USER=your_blogsy_email@gmail.com
+EMAIL_APP_PASSWORD=your_google_app_password
+
+APP_BASE_URL=http://localhost:3000
+```
+
+Use your actual database and email configuration. Never commit `.env` or expose credentials in your repository.
+
+### 5. Set up the PostgreSQL database
+
+Create a PostgreSQL database and configure the required tables for users, posts, comments, likes, sessions, and password-reset tokens.
+
+Run the project's database schema SQL before starting the application.
+
+### 6. Start Tailwind CSS
+
+Open a terminal and run:
 
 ```bash
 npx tailwindcss -i ./src/input.css -o ./public/css/output.css --watch
 ```
 
-This watches the Tailwind input file and automatically generates the CSS output file whenever Tailwind classes are changed.
+### 7. Start the application
 
-### Terminal 2 — Start the Node.js server
-
-Run:
+Open a second terminal and run:
 
 ```bash
-nodemon app.js
+npm start
 ```
 
-The application will start at:
+If your project does not have a start script configured, use:
+
+```bash
+node app.js
+```
+
+For development with Nodemon:
+
+```bash
+npx nodemon app.js
+```
+
+Open the application at:
 
 ```text
 http://localhost:3000
 ```
 
-Open this URL in your browser.
+## 🔐 Authentication and Security
 
----
+- Passwords are hashed using bcrypt before being stored.
+- Login sessions are managed using server-side sessions.
+- PostgreSQL is used for persistent session storage.
+- CSRF protection is applied to sensitive form submissions.
+- Password-reset links use secure, expiring tokens.
+- Environment variables are used to protect credentials and secrets.
 
-## 📝 Creating a Blog
+## 🖼️ Image Uploads
 
-To create a new blog:
+Blogsy supports image uploads for blog posts. Uploaded images are validated by file type and size.
 
-1. Click **Write a Blog** in the navigation bar.
-2. Enter the blog title.
-3. Enter the category.
-4. Enter the author name.
-5. Add a short description.
-6. Write the blog content.
-7. Click **Publish Blog**.
+The local development setup stores uploaded images in `public/uploads/`. For production deployment, persistent image storage such as Cloudinary can be configured to ensure uploaded images remain available independently of the application server.
 
-The new blog will be added to the homepage.
+## 🔑 Password Reset
 
----
-
-## 📖 Viewing a Blog
-
-Each blog card contains a **Read More** button.
-
-Clicking it opens a dynamic URL based on the blog's ID:
-
-```text
-/posts/1
-/posts/2
-/posts/3
-```
-
-Express.js uses the ID to find the corresponding blog post and displays it using the `post.ejs` template.
-
----
-
-## 📌 Current Limitations
-
-Blogsy currently does **not use a database**.
-
-Blog posts are temporarily stored in a JavaScript array inside:
-
-```text
-data/post.js
-```
-
-Because of this, newly created blog posts are lost when the Node.js server is restarted.
-
-Image uploading and user authentication are also not implemented yet.
-
----
-
-## 🔮 Future Improvements
-
-The following features can be added in future versions:
-
-- Database integration
-- User authentication
-- Edit blog posts
-- Delete blog posts
-- Image uploading
-- Search functionality
-- Category filtering
-- Comments
-- Like and bookmark functionality
-- User profiles
-- Blog post timestamps
-- Online deployment
-
----
+Users who forget their passwords can request a reset link through their registered email address. Blogsy sends the link using Nodemailer and Gmail SMTP. Reset tokens expire after 30 minutes and can only be used once.
 
 ## 🎯 Learning Objectives
 
-This project was created to apply concepts learned in:
+This project helped me practice:
 
-- HTML
-- Tailwind CSS
-- JavaScript
-- Node.js
-- Express.js
-- EJS
-- REST-style routing
-- Responsive web design
-- Server-side rendering
-- Git and GitHub
+- Full-stack web development
+- REST-style routing and server-side rendering
+- Database integration using PostgreSQL
+- User authentication and session management
+- Secure password handling
+- File uploads and validation
+- Dynamic EJS templates and reusable partials
+- Responsive UI development with Tailwind CSS
+- Git and GitHub workflows
 
----
+## 🔮 Future Improvements
+
+- Cloud-based image storage integration
+- Production deployment with a hosted PostgreSQL database
+- Improved blog recommendations and trending algorithms
+- Additional accessibility and performance improvements
 
 ## 👨‍💻 Author
 
 **Inam Ul Haq Baba**
 
-Blogsy was developed as a learning project to practice full-stack web development.
-
-
----
+Blogsy was developed as a personal learning project to practice full-stack web development.
 
 ## 📄 License
 

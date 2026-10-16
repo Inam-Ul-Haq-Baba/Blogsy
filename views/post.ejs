@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <link rel="stylesheet" href="/css/output.css">
-    <link rel="icon" href="/favicon.png" type="image/x-icon">
+    <link rel="icon" href="/favicon.png" type="image/png">
 
     <title>Blogsy</title>
 </head>
@@ -46,7 +46,12 @@
 
                 <span>•</span>
                 <span>
-                    <%= post.date %>
+                    <%= new Date(post.date).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                        timeZone: "UTC"
+                    }) %>
                 </span>
             </div>
 
@@ -66,13 +71,15 @@
             </div>
 
             <!-- Description -->
-            <p class="text-lg font-semibold text-slate-700 mb-6">
-                <%= post.description %>
-            </p>
+            <div class="mb-10 rounded-lg border-l-4 border-green-600 bg-green-50 px-5 py-4">
+                <p class="text-left break-words text-base sm:text-lg font-medium text-slate-600 leading-8">
+                    <%= post.description.trim() %>
+                </p>
+            </div>
 
             <!-- Content -->
-            <div class="text-base sm:text-lg text-slate-700 leading-8">
-                <%= post.content %>
+            <div class="blog-content text-left break-words text-base sm:text-lg text-slate-700 leading-8">
+                <%- post.formattedContent %>
             </div>
 
             <div class=" flex items-center justify-between px-3">

@@ -6,12 +6,14 @@ import session from "express-session";
 import dotenv from "dotenv";
 import crypto from "crypto";
 import cookieParser from "cookie-parser";
+import sanitizeHtml from "sanitize-html";
 import fs from "fs";
 import path from "path";
 import connectPgSimple from "connect-pg-simple";
 import { fileURLToPath } from "url";
 import { fileTypeFromFile } from "file-type";
 import { csrfSync } from "csrf-sync";
+import { sendPasswordResetEmail } from "./utils/mailer.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -228,8 +230,6 @@ app.use((req, res, next) => {
 });
 
 
-
-
 app.get("/", async (req, res) => {
     const requestedPage = Math.max(
         1,
@@ -253,7 +253,6 @@ app.get("/", async (req, res) => {
 
         const offset = (currentPage - 1) * limit;
 
-
         const postsResult = await db.query(
             `SELECT
                 posts.*,
@@ -266,16 +265,23 @@ app.get("/", async (req, res) => {
             LEFT JOIN post_likes
                 ON posts.id = post_likes.post_id
             GROUP BY posts.id
-            ORDER BY posts.id DESC
+            ORDER BY
+                (posts.views * 0.5
+                + COUNT(post_likes.user_id) * 0.3
+                + GREATEST(
+                    0,
+                    1 - EXTRACT(
+                        EPOCH FROM (NOW() - posts.date::timestamp)
+                    ) / (30 * 24 * 60 * 60)
+                ) * 100 * 0.2) DESC,
+                posts.id DESC
             LIMIT $2 OFFSET $3`,
             [req.session.userId || null, limit, offset]
         );
 
-
         const success = req.query.published === "true"
             ? "Your blog has been published successfully!"
             : null;
-
 
         res.render("index.ejs", {
             posts: postsResult.rows,
@@ -289,8 +295,6 @@ app.get("/", async (req, res) => {
         res.status(500).send("Database error");
     }
 });
-
-
 
 
 app.get("/posts/:id", async (req, res) => {
@@ -388,8 +392,32 @@ app.get("/posts/:id", async (req, res) => {
                 ? "Your comment has been deleted successfully."
                 : null;
 
+        const post = updatedPostResult.rows[0];
+
+        post.formattedContent = sanitizeHtml(
+            post.content || "",
+            {
+                allowedTags: [
+                    "p", "br", "strong", "b", "em", "i", "u", "s",
+                    "h1", "h2", "h3", "ol", "ul", "li",
+                    "blockquote", "a"
+                ],
+                allowedAttributes: {
+                    a: ["href", "target", "rel"]
+                },
+                allowedSchemes: ["http", "https", "mailto"],
+                transformTags: {
+                    a: sanitizeHtml.simpleTransform(
+                        "a",
+                        { target: "_blank", rel: "noopener noreferrer" },
+                        true
+                    )
+                }
+            }
+        );
+
         res.render("post.ejs", {
-            post: updatedPostResult.rows[0],
+            post: post,
             comments: commentsResult.rows,
             success,
             likeCount: likesResult.rows[0].like_count,
@@ -596,7 +624,27 @@ app.post("/create", requireLogin, (req, res, next) => {
 
     const title = (req.body.title || "").trim();
     const description = (req.body.description || "").trim();
-    const content = (req.body.content || "").trim();
+    const content = sanitizeHtml(
+        (req.body.content || "").trim(),
+        {
+            allowedTags: [
+                "p", "br", "strong", "b", "em", "i", "u", "s",
+                "h1", "h2", "h3", "ol", "ul", "li",
+                "blockquote", "a"
+            ],
+            allowedAttributes: {
+                a: ["href", "target", "rel"]
+            },
+            allowedSchemes: ["http", "https", "mailto"],
+            transformTags: {
+                a: sanitizeHtml.simpleTransform(
+                    "a",
+                    { target: "_blank", rel: "noopener noreferrer" },
+                    true
+                )
+            }
+        }
+    );
 
     const category = (req.body.category || "")
         .trim()
@@ -819,9 +867,13 @@ app.post("/register", csrfSynchronisedProtection, async (req, res) => {
 // Login Route
 
 app.get("/login", (req, res) => {
-    const success = req.query.registered === "true"
-        ? "Your account has been created successfully. Please log in."
-        : null;
+    let success = null;
+
+    if (req.query.passwordReset === "true") {
+        success = "Your password has been reset successfully. Please log in.";
+    } else if (req.query.registered === "true") {
+        success = "Your account has been created successfully. Please log in.";
+    }
 
     res.render("login.ejs", { success });
 });
@@ -941,6 +993,238 @@ app.post("/logout", csrfSynchronisedProtection, (req, res) => {
 });
 
 
+// Forgot Password Route
+app.get("/forgot-password", (req, res) => {
+    res.render("forgot-password.ejs", {
+        error: null,
+        success: null
+    });
+});
+
+app.post("/forgot-password", csrfSynchronisedProtection, async (req, res) => {
+    const email = req.body.email?.trim().toLowerCase();
+
+    // Always use the same response to avoid revealing registered emails.
+    const genericMessage =
+        "If an account exists for that email, a password reset link will be sent shortly.";
+
+    if (!email || email.length > 254) {
+        return res.status(200).render("forgot-password.ejs", {
+            error: null,
+            success: genericMessage
+        });
+    }
+
+    let user;
+
+    try {
+        const result = await db.query(
+            "SELECT id, email FROM users WHERE LOWER(email) = $1",
+            [email]
+        );
+
+        user = result.rows[0];
+
+        // Do not reveal whether the email exists.
+        if (!user) {
+            return res.render("forgot-password.ejs", {
+                error: null,
+                success: genericMessage
+            });
+        }
+
+        // Invalidate earlier reset links for this account.
+        await db.query(
+            "DELETE FROM password_reset_tokens WHERE user_id = $1",
+            [user.id]
+        );
+
+        // Generate a secure, unpredictable token.
+        const rawToken = crypto.randomBytes(32).toString("hex");
+        const tokenHash = crypto
+            .createHash("sha256")
+            .update(rawToken)
+            .digest("hex");
+
+        await db.query(
+            `INSERT INTO password_reset_tokens
+                (user_id, token_hash, expires_at)
+             VALUES ($1, $2, NOW() + INTERVAL '30 minutes')`,
+            [user.id, tokenHash]
+        );
+
+        const baseUrl = process.env.APP_BASE_URL;
+
+        if (!baseUrl) {
+            throw new Error("APP_BASE_URL is not configured.");
+        }
+
+        const resetUrl =
+            `${baseUrl.replace(/\/$/, "")}/reset-password/${rawToken}`;
+
+        try {
+            await sendPasswordResetEmail(user.email, resetUrl);
+        } catch (emailError) {
+            // Remove the unusable token if sending fails.
+            await db.query(
+                "DELETE FROM password_reset_tokens WHERE token_hash = $1",
+                [tokenHash]
+            );
+
+            throw emailError;
+        }
+
+        return res.render("forgot-password.ejs", {
+            error: null,
+            success: genericMessage
+        });
+    } catch (err) {
+        console.error("Password reset request failed:", err.message);
+
+        // Keep the public response generic even when processing fails.
+        return res.status(200).render("forgot-password.ejs", {
+            error: null,
+            success: genericMessage
+        });
+    }
+});
+
+
+// Reset Password Routes
+app.get("/reset-password/:token", async (req, res) => {
+    const { token } = req.params;
+
+    if (!/^[a-f0-9]{64}$/i.test(token)) {
+        return res.status(400).send(
+            "This password reset link is invalid or expired."
+        );
+    }
+
+    try {
+        const tokenHash = crypto
+            .createHash("sha256")
+            .update(token)
+            .digest("hex");
+
+        const result = await db.query(
+            `SELECT id
+             FROM password_reset_tokens
+             WHERE token_hash = $1
+               AND expires_at > NOW()`,
+            [tokenHash]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(400).send(
+                "This password reset link is invalid or expired."
+            );
+        }
+
+        return res.render("reset-password.ejs", {
+            token,
+            error: null
+        });
+    } catch (err) {
+        console.error("Reset page error:", err.message);
+        return res.status(500).send("Unable to open the reset page.");
+    }
+});
+
+
+app.post(
+    "/reset-password/:token",
+    csrfSynchronisedProtection,
+    async (req, res) => {
+        const { token } = req.params;
+        const { password, confirmPassword } = req.body;
+
+        const renderError = (message, status = 400) =>
+            res.status(status).render("reset-password.ejs", {
+                token,
+                error: message
+            });
+
+        if (!/^[a-f0-9]{64}$/i.test(token)) {
+            return res.status(400).send(
+                "This password reset link is invalid or expired."
+            );
+        }
+
+        if (
+            typeof password !== "string" ||
+            typeof confirmPassword !== "string"
+        ) {
+            return renderError("Please enter both password fields.");
+        }
+
+        if (password.length < 8 || password.length > 72) {
+            return renderError(
+                "Password must contain between 8 and 72 characters."
+            );
+        }
+
+        if (password !== confirmPassword) {
+            return renderError("The passwords do not match.");
+        }
+
+        const tokenHash = crypto
+            .createHash("sha256")
+            .update(token)
+            .digest("hex");
+
+        try {
+            // Hash the password before updating the account.
+            const hashedPassword = await bcrypt.hash(password, 10);
+
+            // Consume the token and update the password atomically.
+            await db.query("BEGIN");
+
+            const tokenResult = await db.query(
+                `SELECT user_id
+                 FROM password_reset_tokens
+                 WHERE token_hash = $1
+                   AND expires_at > NOW()
+                 FOR UPDATE`,
+                [tokenHash]
+            );
+
+            if (tokenResult.rows.length === 0) {
+                await db.query("ROLLBACK");
+                return res.status(400).send(
+                    "This password reset link is invalid or expired."
+                );
+            }
+
+            const userId = tokenResult.rows[0].user_id;
+
+            await db.query(
+                "UPDATE users SET password = $1 WHERE id = $2",
+                [hashedPassword, userId]
+            );
+
+            // Remove all reset links for this account.
+            await db.query(
+                "DELETE FROM password_reset_tokens WHERE user_id = $1",
+                [userId]
+            );
+
+            await db.query("COMMIT");
+
+            return res.redirect("/login?passwordReset=true");
+        } catch (err) {
+            await db.query("ROLLBACK").catch(() => { });
+            console.error("Password update error:", err.message);
+
+            return renderError(
+                "Unable to reset your password. Please try again.",
+                500
+            );
+        }
+    }
+);
+
+
+
 // My blogs
 app.get("/my-blogs", requireLogin, async (req, res) => {
     const userId = req.session.userId;
@@ -1048,7 +1332,6 @@ app.get("/posts/:id/edit", requireLogin, async (req, res) => {
 
 
 // Edit Post
-
 app.post("/posts/:id/edit", requireLogin, (req, res, next) => {
     upload.single("image")(req, res, async (err) => {
         if (err) {
@@ -1546,7 +1829,7 @@ app.get("/profile/:id", async (req, res) => {
 
         const success =
             req.query.updated === "true" &&
-            req.session.userId === userId
+                req.session.userId === userId
                 ? "Your profile has been updated successfully."
                 : null;
 
