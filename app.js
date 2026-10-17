@@ -244,7 +244,10 @@ app.get("/", async (req, res) => {
         );
 
         const totalPosts = Number(countResult.rows[0].count);
-        const totalPages = Math.ceil(totalPosts / limit);
+        const totalPages = Math.min(
+            10,
+            Math.max(1, Math.ceil(totalPosts / limit))
+        );
 
         const currentPage = Math.min(
             requestedPage,
@@ -1267,7 +1270,6 @@ app.get("/my-blogs", requireLogin, async (req, res) => {
 
 
 // search
-
 app.get("/search", async (req, res) => {
     const searchTerm = req.query.q || "";
 
@@ -2140,8 +2142,6 @@ app.post(
 
 
 // Category Filtering
-
-
 app.get("/category/:category", async (req, res) => {
     const category = req.params.category;
 
