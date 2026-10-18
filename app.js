@@ -74,6 +74,8 @@ const sessionStore = new PostgreSQLStore({
     createTableIfMissing: false
 });
 
+app.set("trust proxy", 1);
+
 app.use(cookieParser(process.env.SESSION_SECRET));
 
 // Session Middleware
