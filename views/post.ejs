@@ -55,20 +55,23 @@
                 </span>
             </div>
 
+
             <!-- Image -->
-            
-            
             <div class="mb-6">
                 <img
                     id="post-full-image"
                     src="<%= typeof post.image === 'string' &&
-                        /^\/(uploads|images)\/[a-zA-Z0-9._-]+$/.test(post.image)
+                        (
+                            /^\/(uploads|images)\/[a-zA-Z0-9._-]+$/.test(post.image) ||
+                            post.image.startsWith('https://res.cloudinary.com/')
+                        )
                         ? post.image
                         : '/images/default-blog.png' %>"
                     alt="<%= post.title %>"
                     class="w-full max-h-[500px] object-contain rounded-xl cursor-zoom-in"
                 >
             </div>
+
 
             <!-- Description -->
             <div class="mb-10 rounded-lg border-l-4 border-green-600 bg-green-50 px-5 py-4">

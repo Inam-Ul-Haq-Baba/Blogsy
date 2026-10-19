@@ -12,14 +12,63 @@ import path from "path";
 import connectPgSimple from "connect-pg-simple";
 import { fileURLToPath } from "url";
 import { fileTypeFromFile } from "file-type";
+import { fileTypeFromBuffer } from "file-type";
 import { csrfSync } from "csrf-sync";
 import { sendPasswordResetEmail } from "./utils/mailer.js";
+import { v2 as cloudinary } from "cloudinary";
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 
 dotenv.config();
+
+// Cloudinary configuration
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+
+// helper to extract the old image's Cloudinary ID
+function getCloudinaryPublicId(imageUrl) {
+    try {
+        const url = new URL(imageUrl);
+
+        if (url.hostname !== "res.cloudinary.com") {
+            return null;
+        }
+
+        const parts = url.pathname.split("/");
+        const uploadIndex = parts.indexOf("upload");
+
+        if (uploadIndex === -1) {
+            return null;
+        }
+
+        const imageParts = parts.slice(uploadIndex + 1);
+
+        // Remove the version segment, such as v1234567890
+        if (imageParts[0] && /^v\d+$/.test(imageParts[0])) {
+            imageParts.shift();
+        }
+
+        if (imageParts.length === 0) {
+            return null;
+        }
+
+        // Remove the file extension
+        const lastIndex = imageParts.length - 1;
+        imageParts[lastIndex] = imageParts[lastIndex].replace(/\.[^/.]+$/, "");
+
+        return imageParts.join("/");
+    } catch {
+        return null;
+    }
+}
+
 
 const app = express();
 const port = 3000;
@@ -522,9 +571,6 @@ app.get("/create", requireLogin, (req, res) => {
 });
 
 
-
-
-
 app.post("/create", requireLogin, (req, res, next) => {
     upload.single("image")(req, res, (err) => {
         if (err) {
@@ -533,8 +579,7 @@ app.post("/create", requireLogin, (req, res, next) => {
 
             if (err instanceof multer.MulterError) {
                 if (err.code === "LIMIT_FILE_SIZE") {
-                    errorMessage =
-                        "Image must be smaller than 5 MB.";
+                    errorMessage = "Image must be smaller than 5 MB.";
                 }
             } else {
                 errorMessage = err.message;
@@ -569,34 +614,41 @@ app.post("/create", requireLogin, (req, res, next) => {
         next();
     });
 }, async (req, res) => {
+    let uploadedImagePublicId = null;
 
-    // Delete an uploaded image if processing fails
-    const deleteUploadedImage = async () => {
+    const deleteTemporaryImage = async () => {
         if (!req.file) return;
 
-        const imagePath = path.join(
-            __dirname,
-            "public",
-            "uploads",
-            req.file.filename
-        );
-
         try {
-            await fs.promises.unlink(imagePath);
+            await fs.promises.unlink(req.file.path);
         } catch (err) {
             if (err.code !== "ENOENT") {
                 console.error(
-                    "Failed to delete uploaded image:",
+                    "Failed to delete temporary image:",
                     err.message
                 );
             }
         }
     };
 
+    const deleteCloudinaryImage = async () => {
+        if (!uploadedImagePublicId) return;
 
-    if (req.file) {
         try {
-            const detectedType = await fileTypeFromFile(req.file.path);
+            await cloudinary.uploader.destroy(uploadedImagePublicId);
+        } catch (err) {
+            console.error(
+                "Failed to clean up Cloudinary image:",
+                err.message
+            );
+        }
+    };
+
+    try {
+        // Verify the actual uploaded file contents.
+        if (req.file) {
+            const buffer = await fs.promises.readFile(req.file.path);
+            const detectedType = await fileTypeFromBuffer(buffer);
 
             const allowedMimeTypes = [
                 "image/jpeg",
@@ -609,125 +661,128 @@ app.post("/create", requireLogin, (req, res, next) => {
                 !detectedType ||
                 !allowedMimeTypes.includes(detectedType.mime)
             ) {
-                await deleteUploadedImage();
+                await deleteTemporaryImage();
 
                 return res.status(400).render("create.ejs", {
                     error: "The uploaded file is not a valid supported image."
                 });
             }
-        } catch (err) {
-            await deleteUploadedImage();
+        }
 
-            console.error("Image verification failed:", err.message);
+        const title = (req.body.title || "").trim();
+        const description = (req.body.description || "").trim();
+
+        const content = sanitizeHtml(
+            (req.body.content || "").trim(),
+            {
+                allowedTags: [
+                    "p", "br", "strong", "b", "em", "i", "u", "s",
+                    "h1", "h2", "h3", "ol", "ul", "li",
+                    "blockquote", "a"
+                ],
+                allowedAttributes: {
+                    a: ["href", "target", "rel"]
+                },
+                allowedSchemes: ["http", "https", "mailto"],
+                transformTags: {
+                    a: sanitizeHtml.simpleTransform(
+                        "a",
+                        {
+                            target: "_blank",
+                            rel: "noopener noreferrer"
+                        },
+                        true
+                    )
+                }
+            }
+        );
+
+        const category = (req.body.category || "")
+            .trim()
+            .toLowerCase()
+            .replace(/\b\w/g, char => char.toUpperCase());
+
+        if (!title || !category || !description || !content) {
+            await deleteTemporaryImage();
 
             return res.status(400).render("create.ejs", {
-                error: "Unable to verify the uploaded image. Please try another file."
+                error: "Please fill in all required fields."
             });
         }
-    }
 
+        if (
+            title.length > 255 ||
+            category.length > 100 ||
+            description.length > 500 ||
+            content.length > 20000
+        ) {
+            await deleteTemporaryImage();
 
-    const title = (req.body.title || "").trim();
-    const description = (req.body.description || "").trim();
-    const content = sanitizeHtml(
-        (req.body.content || "").trim(),
-        {
-            allowedTags: [
-                "p", "br", "strong", "b", "em", "i", "u", "s",
-                "h1", "h2", "h3", "ol", "ul", "li",
-                "blockquote", "a"
-            ],
-            allowedAttributes: {
-                a: ["href", "target", "rel"]
-            },
-            allowedSchemes: ["http", "https", "mailto"],
-            transformTags: {
-                a: sanitizeHtml.simpleTransform(
-                    "a",
-                    { target: "_blank", rel: "noopener noreferrer" },
-                    true
-                )
-            }
+            return res.status(400).render("create.ejs", {
+                error: "One or more fields exceed the allowed length."
+            });
         }
-    );
 
-    const category = (req.body.category || "")
-        .trim()
-        .toLowerCase()
-        .replace(/\b\w/g, char => char.toUpperCase());
+        if (!allCategories.includes(category)) {
+            await deleteTemporaryImage();
 
-    // Validate required fields
-    if (!title || !category || !description || !content) {
-        await deleteUploadedImage();
+            return res.status(400).render("create.ejs", {
+                error: "Please select a valid category."
+            });
+        }
 
-        return res.status(400).render("create.ejs", {
-            error: "Please fill in all required fields."
-        });
-    }
+        const author = req.session.userName;
+        const userId = req.session.userId;
 
-    // Validate field lengths
-    if (
-        title.length > 255 ||
-        category.length > 100 ||
-        description.length > 500 ||
-        content.length > 20000
-    ) {
-        await deleteUploadedImage();
+        // Upload the verified image to Cloudinary.
+        let image = "/images/default_image.png";
 
-        return res.status(400).render("create.ejs", {
-            error: "One or more fields exceed the allowed length."
-        });
-    }
+        if (req.file) {
+            const cloudinaryResult = await cloudinary.uploader.upload(
+                req.file.path,
+                {
+                    folder: "blogsy",
+                    resource_type: "image"
+                }
+            );
 
-    // Allowed categories
-    const allowedCategories = allCategories;
+            image = cloudinaryResult.secure_url;
+            uploadedImagePublicId = cloudinaryResult.public_id;
+        }
 
-    // Validate category
-    if (!allowedCategories.includes(category)) {
-        await deleteUploadedImage();
+        // Save the Cloudinary URL in PostgreSQL.
+        await db.query(
+            `INSERT INTO posts
+             (title, category, description, content, author, date, image, user_id)
+             VALUES ($1, $2, $3, $4, $5, CURRENT_DATE, $6, $7)`,
+            [
+                title,
+                category,
+                description,
+                content,
+                author,
+                image,
+                userId
+            ]
+        );
 
-        return res.status(400).render("create.ejs", {
-            error: "Please select a valid category."
-        });
-    }
-
-    const author = req.session.userName;
-    const userId = req.session.userId;
-
-    const image = req.file
-        ? `/uploads/${req.file.filename}`
-        : `/images/default_image.png`;
-
-    const query = `
-        INSERT INTO posts
-        (title, category, description, content, author, date, image, user_id)
-        VALUES ($1, $2, $3, $4, $5, CURRENT_DATE, $6, $7)
-    `;
-
-    const values = [
-        title,
-        category,
-        description,
-        content,
-        author,
-        image,
-        userId
-    ];
-
-    try {
-        await db.query(query, values);
+        // The temporary file is no longer needed.
+        await deleteTemporaryImage();
 
         return res.redirect("/?published=true");
-    } catch (err) {
-        console.error("Failed to create post:", err.message);
 
-        await deleteUploadedImage();
+    } catch (err) {
+        await deleteTemporaryImage();
+        await deleteCloudinaryImage();
+
+        console.error("Failed to create blog:", err.message);
 
         return res.status(500).send(
             "Unable to publish your blog. Please try again."
         );
     }
 });
+
 
 
 
@@ -1337,7 +1392,7 @@ app.get("/posts/:id/edit", requireLogin, async (req, res) => {
 
 // Edit Post
 app.post("/posts/:id/edit", requireLogin, (req, res, next) => {
-    upload.single("image")(req, res, async (err) => {
+    upload.single("image")(req, res, (err) => {
         if (err) {
             let errorMessage =
                 "There was a problem uploading your image.";
@@ -1382,6 +1437,36 @@ app.post("/posts/:id/edit", requireLogin, (req, res, next) => {
     const postId = Number(req.params.id);
     const userId = req.session.userId;
 
+    let uploadedImagePublicId = null;
+
+    const deleteTemporaryImage = async () => {
+        if (!req.file) return;
+
+        try {
+            await fs.promises.unlink(req.file.path);
+        } catch (err) {
+            if (err.code !== "ENOENT") {
+                console.error(
+                    "Failed to delete temporary image:",
+                    err.message
+                );
+            }
+        }
+    };
+
+    const deleteNewCloudinaryImage = async () => {
+        if (!uploadedImagePublicId) return;
+
+        try {
+            await cloudinary.uploader.destroy(uploadedImagePublicId);
+        } catch (err) {
+            console.error(
+                "Failed to clean up Cloudinary image:",
+                err.message
+            );
+        }
+    };
+
     const title =
         typeof req.body.title === "string"
             ? req.body.title.trim()
@@ -1404,33 +1489,24 @@ app.post("/posts/:id/edit", requireLogin, (req, res, next) => {
                 .replace(/\b\w/g, char => char.toUpperCase())
             : "";
 
-    const deleteUploadedImage = async () => {
-        if (!req.file) return;
-
-        try {
-            await fs.promises.unlink(req.file.path);
-        } catch (err) {
-            if (err.code !== "ENOENT") {
-                console.error("Failed to delete uploaded image:", err.message);
-            }
-        }
-    };
-
-    if (!Number.isInteger(postId) || postId <= 0) {
-        await deleteUploadedImage();
-        return res.status(400).send("Invalid blog ID");
-    }
-
     try {
+        if (!Number.isInteger(postId) || postId <= 0) {
+            await deleteTemporaryImage();
+            return res.status(400).send("Invalid blog ID");
+        }
+
         const existing = await db.query(
             "SELECT image FROM posts WHERE id = $1 AND user_id = $2",
             [postId, userId]
         );
 
         if (existing.rows.length === 0) {
-            await deleteUploadedImage();
+            await deleteTemporaryImage();
             return res.status(404).send("Blog not found");
         }
+
+        // Save the existing image URL before updating the post.
+        const oldImage = existing.rows[0].image;
 
         // Verify the actual uploaded file contents.
         if (req.file) {
@@ -1443,8 +1519,11 @@ app.post("/posts/:id/edit", requireLogin, (req, res, next) => {
                 "image/gif"
             ];
 
-            if (!detectedType || !allowedMimeTypes.includes(detectedType.mime)) {
-                await deleteUploadedImage();
+            if (
+                !detectedType ||
+                !allowedMimeTypes.includes(detectedType.mime)
+            ) {
+                await deleteTemporaryImage();
 
                 return res.status(400).render("edit.ejs", {
                     error: "The uploaded file is not a valid supported image."
@@ -1453,7 +1532,7 @@ app.post("/posts/:id/edit", requireLogin, (req, res, next) => {
         }
 
         if (!title || !category || !description || !content) {
-            await deleteUploadedImage();
+            await deleteTemporaryImage();
 
             return res.status(400).render("edit.ejs", {
                 error: "Please fill in all required fields."
@@ -1466,26 +1545,36 @@ app.post("/posts/:id/edit", requireLogin, (req, res, next) => {
             description.length > 500 ||
             content.length > 20000
         ) {
-            await deleteUploadedImage();
+            await deleteTemporaryImage();
 
             return res.status(400).render("edit.ejs", {
                 error: "One or more fields exceed the allowed length."
             });
         }
 
-        const allowedCategories = allCategories;
-
-        if (!allowedCategories.includes(category)) {
-            await deleteUploadedImage();
+        if (!allCategories.includes(category)) {
+            await deleteTemporaryImage();
 
             return res.status(400).render("edit.ejs", {
                 error: "Please select a valid category."
             });
         }
 
-        const image = req.file
-            ? `/uploads/${req.file.filename}`
-            : existing.rows[0].image;
+        // Keep the existing image unless a new one is uploaded.
+        let image = existing.rows[0].image;
+
+        if (req.file) {
+            const cloudinaryResult = await cloudinary.uploader.upload(
+                req.file.path,
+                {
+                    folder: "blogsy",
+                    resource_type: "image"
+                }
+            );
+
+            image = cloudinaryResult.secure_url;
+            uploadedImagePublicId = cloudinaryResult.public_id;
+        }
 
         await db.query(
             `UPDATE posts
@@ -1506,9 +1595,45 @@ app.post("/posts/:id/edit", requireLogin, (req, res, next) => {
             ]
         );
 
+        await deleteTemporaryImage();
+
+        // The update succeeded, so do not delete the new Cloudinary image.
+        
+        // The database update succeeded.
+        uploadedImagePublicId = null;
+
+        // Delete the previous Cloudinary image only if it was replaced.
+        if (req.file && oldImage && oldImage !== image) {
+            const oldImagePublicId = getCloudinaryPublicId(oldImage);
+
+            if (oldImagePublicId) {
+                try { 
+                    const result = await cloudinary.uploader.destroy(
+                        oldImagePublicId
+                    );
+
+                    if (result.result !== "ok" &&
+                        result.result !== "not found") {
+                        console.error(
+                            "Cloudinary did not confirm old image deletion:",
+                            result
+                        );
+                    }
+                } catch (cleanupError) {
+                    console.error(
+                        "Failed to delete old Cloudinary image:",
+                        cleanupError.message
+                    );
+                }
+            }
+        }
+
         return res.redirect("/my-blogs?updated=true");
+
+
     } catch (err) {
-        await deleteUploadedImage();
+        await deleteTemporaryImage();
+        await deleteNewCloudinaryImage();
 
         console.error("Failed to update blog:", err.message);
 
@@ -1517,6 +1642,7 @@ app.post("/posts/:id/edit", requireLogin, (req, res, next) => {
         );
     }
 });
+
 
 
 app.post("/posts/:id/delete", requireLogin, csrfSynchronisedProtection, async (req, res) => {
