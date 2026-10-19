@@ -2315,6 +2315,40 @@ app.use((err, req, res, next) => {
 });
 
 
+
+app.get("/sitemap.xml", async (req, res) => {
+    try {
+        const result = await db.query(
+            "SELECT id FROM posts ORDER BY id DESC"
+        );
+
+        const baseUrl = `${req.protocol}://${req.get("host")}`;
+
+        const urls = [
+            `${baseUrl}/`,
+            `${baseUrl}/about`,
+            ...result.rows.map(
+                (post) => `${baseUrl}/posts/${post.id}`
+            )
+        ];
+
+        const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${urls.map((url) => `    <url>
+        <loc>${url}</loc>
+    </url>`).join("\n")}
+</urlset>`;
+
+        res.type("application/xml").send(sitemap);
+
+    } catch (err) {
+        console.error("Sitemap generation failed:", err.message);
+        res.status(500).send("Unable to generate sitemap");
+    }
+});
+
+
+
 app.listen(port, () => {
     console.log(`Listening on http://localhost:${port}`);
 })
