@@ -1,5 +1,7 @@
 # Blogsy — Where Ideas Come Alive ✍️
 
+🌐 **Live Website:** [https://blogsy-swhh.onrender.com]
+
 Blogsy is a responsive full-stack blog web application where users can create, publish, discover, and interact with blog posts. It includes user authentication, profile management, likes, comments, search, and image uploads.
 
 Built as a hands-on project to strengthen my frontend and backend development skills.
