@@ -461,7 +461,7 @@ app.get("/posts/:id", async (req, res) => {
         const post = updatedPostResult.rows[0];
 
         post.formattedContent = sanitizeHtml(
-            post.content || "",
+        (post.content || "").replace(/&nbsp;|\u00A0/gi, " "),
             {
                 allowedTags: [
                     "p", "br", "strong", "b", "em", "i", "u", "s",
