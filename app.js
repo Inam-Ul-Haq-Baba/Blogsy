@@ -337,12 +337,24 @@ app.get("/", async (req, res) => {
             ? "Your blog has been published successfully!"
             : null;
 
+
         res.render("index.ejs", {
             posts: postsResult.rows,
             currentPage,
             totalPages,
-            success
+            success,
+
+            seoTitle: currentPage === 1
+                ? "Blogsy — Where Ideas Come Alive"
+                : `Blogsy — Page ${currentPage}`,
+
+            seoDescription: "Discover stories, ideas, knowledge, and experiences on Blogsy. Read blogs, explore different topics, and share your thoughts with the world.",
+
+            canonicalUrl: currentPage === 1
+                ? "https://blogsy-swhh.onrender.com/"
+                : `https://blogsy-swhh.onrender.com/?page=${currentPage}`
         });
+
 
     } catch (err) {
         console.error(err.message);
@@ -470,13 +482,36 @@ app.get("/posts/:id", async (req, res) => {
             }
         );
 
+
+        const seoDescription = sanitizeHtml(
+            post.content || "",
+            { allowedTags: [], allowedAttributes: {} }
+        )
+            .replace(/\s+/g, " ")
+            .trim()
+            .slice(0, 160);
+
+        const postImage = post.image
+            ? post.image.startsWith("https://")
+                ? post.image
+                : `https://blogsy-swhh.onrender.com${post.image.startsWith("/") ? "" : "/"}${post.image}`
+            : "https://blogsy-swhh.onrender.com/images/default-blog.png";
+
         res.render("post.ejs", {
             post: post,
             comments: commentsResult.rows,
             success,
             likeCount: likesResult.rows[0].like_count,
-            userLiked: likesResult.rows[0].user_liked
+            userLiked: likesResult.rows[0].user_liked,
+
+            seoTitle: `${post.title} | Blogsy`,
+            seoDescription: seoDescription ||
+                "Read this article on Blogsy, where ideas come alive.",
+            canonicalUrl: `https://blogsy-swhh.onrender.com/posts/${post.id}`,
+            seoImage: postImage,
+            seoType: "article"
         });
+
 
     } catch (err) {
         console.error("Post detail error:", err.message);
@@ -785,10 +820,14 @@ app.post("/create", requireLogin, (req, res, next) => {
 
 
 
-
 app.get("/about", (req, res) => {
-    res.render("about.ejs")
-})
+    res.render("about.ejs", {
+        seoTitle: "About Blogsy — Our Story",
+        seoDescription: "Learn about Blogsy, a blogging platform where people can share their thoughts, stories, knowledge, and experiences with the world.",
+        canonicalUrl: "https://blogsy-swhh.onrender.com/about"
+    });
+});
+
 
 app.get("/register", (req, res) => {
     res.render("register.ejs");
@@ -1355,7 +1394,15 @@ app.get("/search", async (req, res) => {
 
         res.render("search.ejs", {
             posts: result.rows,
-            searchTerm
+            searchTerm,
+
+            seoTitle: searchTerm.trim()
+                ? `Search results for "${searchTerm.trim()}" | Blogsy`
+                : "Search Blogs | Blogsy",
+
+            seoDescription: searchTerm.trim()
+                ? `Explore Blogsy articles matching "${searchTerm.trim()}".`
+                : "Search blog posts, topics, and authors on Blogsy."
         });
     } catch (err) {
         console.error("Search error:", err);
@@ -1598,7 +1645,7 @@ app.post("/posts/:id/edit", requireLogin, (req, res, next) => {
         await deleteTemporaryImage();
 
         // The update succeeded, so do not delete the new Cloudinary image.
-        
+
         // The database update succeeded.
         uploadedImagePublicId = null;
 
@@ -1607,7 +1654,7 @@ app.post("/posts/:id/edit", requireLogin, (req, res, next) => {
             const oldImagePublicId = getCloudinaryPublicId(oldImage);
 
             if (oldImagePublicId) {
-                try { 
+                try {
                     const result = await cloudinary.uploader.destroy(
                         oldImagePublicId
                     );
@@ -2293,7 +2340,11 @@ app.get("/category/:category", async (req, res) => {
 
         res.render("category.ejs", {
             posts: result.rows,
-            category
+            category,
+
+            seoTitle: `${category} Blogs | Blogsy`,
+            seoDescription: `Explore ${category} blogs on Blogsy. Read stories, ideas, and articles related to ${category}.`,
+            canonicalUrl: `https://blogsy-swhh.onrender.com/category/${encodeURIComponent(category)}`
         });
     } catch (err) {
         console.error(err.message);

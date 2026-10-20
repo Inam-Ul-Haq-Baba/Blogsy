@@ -1,16 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <link rel="stylesheet" href="/css/output.css">
-    <link rel="icon" href="/favicon.png" type="image/png">
-
-    <title>Blogsy</title>
-</head>
-
 <body class="bg-slate-50">
 
     <%- include("partials/navbar.ejs") %>
@@ -231,6 +221,32 @@
             </div>
 
         </main>
+
+        
+        <script type="application/ld+json">
+        <%- JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BlogPosting",
+            "mainEntityOfPage": {
+                "@type": "WebPage",
+                "@id": `https://blogsy-swhh.onrender.com/posts/${post.id}`
+            },
+            "headline": post.title,
+            "description": seoDescription || "Read this article on Blogsy, where ideas come alive.",
+            "image": postImage,
+            "datePublished": new Date(post.date).toISOString(),
+            "author": {
+                "@type": "Person",
+                "name": post.author
+            },
+            "publisher": {
+                "@type": "Organization",
+                "name": "Blogsy",
+                "url": "https://blogsy-swhh.onrender.com"
+            }
+        }) %>
+        </script>
+
 
         <script src="/js/script.js"></script>
 

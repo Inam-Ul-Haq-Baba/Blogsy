@@ -1,15 +1,51 @@
 <!DOCTYPE html>
 <html lang="en">
 
+
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <link rel="stylesheet" href="/css/output.css">
     <link rel="icon" href="/favicon.png" type="image/png">
-    <title>Blogsy</title>
+
+    <title><%= typeof seoTitle !== "undefined" && seoTitle ? seoTitle : "Blogsy — Where Ideas Come Alive" %></title>
+
+    <meta name="description" content="<%= typeof seoDescription !== 'undefined' && seoDescription ? seoDescription : 'Blogsy is a place to share thoughts, stories, knowledge, and experiences with the world.' %>">
+
+    <% if (typeof canonicalUrl !== "undefined" && canonicalUrl) { %>
+        <link rel="canonical" href="<%= canonicalUrl %>">
+    <% } %>
+
+    <meta name="robots" content="<%= typeof seoRobots !== 'undefined' && seoRobots ? seoRobots : 'index, follow' %>">
+
+    <meta property="og:site_name" content="Blogsy">
+    <meta property="og:type" content="<%= typeof seoType !== 'undefined' && seoType ? seoType : 'website' %>">
+    <meta property="og:title" content="<%= typeof seoTitle !== 'undefined' && seoTitle ? seoTitle : 'Blogsy — Where Ideas Come Alive' %>">
+    <meta property="og:description" content="<%= typeof seoDescription !== 'undefined' && seoDescription ? seoDescription : 'Blogsy is a place to share thoughts, stories, knowledge, and experiences with the world.' %>">
+
+    <% if (typeof canonicalUrl !== "undefined" && canonicalUrl) { %>
+        <meta property="og:url" content="<%= canonicalUrl %>">
+    <% } %>
+
+    <%
+        const socialImage =
+            typeof seoImage !== "undefined" && seoImage
+                ? seoImage
+                : "https://blogsy-swhh.onrender.com/images/default-blog.png";
+    %>
+
+    <meta property="og:image" content="<%= socialImage %>">
+    <meta name="twitter:image" content="<%= socialImage %>">
+    <meta name="twitter:card" content="summary_large_image">
+
+    <meta name="twitter:title" content="<%= typeof seoTitle !== 'undefined' && seoTitle ? seoTitle : 'Blogsy — Where Ideas Come Alive' %>">
+    <meta name="twitter:description" content="<%= typeof seoDescription !== 'undefined' && seoDescription ? seoDescription : 'Blogsy is a place to share thoughts, stories, knowledge, and experiences with the world.' %>">
 
     <%- include("google-analytics.ejs") %>
 </head>
+
 
 <body class="font-serif">
 
@@ -313,6 +349,3 @@
             <!-- Navbar JavaScript -->
             <script src="/js/navbar.js"></script>
 
-</body>
-
-</html>

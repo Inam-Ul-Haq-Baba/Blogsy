@@ -1,62 +1,51 @@
-<!DOCTYPE html>
-<html lang="en">
+<%- include("partials/navbar.ejs") %>
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="/css/output.css">
-    <link rel="icon" href="/favicon.png" type="image/png">
-    <title>Search - Blogsy</title>
-</head>
+    <main class="max-w-7xl mx-auto px-2 sm:px-5 py-12">
 
-<body class="font-serif">
+        <h1 class="text-3xl font-bold mb-3">
+            <%= searchTerm.trim() ? `Search Results for "${searchTerm.trim()}" ` : "Search Blogs" %>
+        </h1>
 
-    <%- include("partials/navbar.ejs") %>
+        <p class="text-gray-600 mb-10">
+            Results for:
+            <span class="font-semibold text-green-600">
+                "<%= searchTerm %>"
+            </span>
+        </p>
 
-        <main class="max-w-7xl mx-auto px-2 sm:px-5 py-12">
+        <% if (posts.length===0) { %>
 
-            <h1 class="text-3xl font-bold mb-3">
-                Search Results
-            </h1>
+            <div class="text-center py-16">
+                <h2 class="text-2xl font-semibold text-gray-700">
+                    No blogs found
+                </h2>
 
-            <p class="text-gray-600 mb-10">
-                Results for:
-                <span class="font-semibold text-green-600">
-                    "<%= searchTerm %>"
-                </span>
-            </p>
+                <p class="text-gray-500 mt-2">
+                    Try searching for something else.
+                </p>
+            </div>
 
-            <% if (posts.length===0) { %>
+            <% } else { %>
 
-                <div class="text-center py-16">
-                    <h2 class="text-2xl font-semibold text-gray-700">
-                        No blogs found
-                    </h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
 
-                    <p class="text-gray-500 mt-2">
-                        Try searching for something else.
-                    </p>
+                    <% posts.forEach(post=> { %>
+
+                        <div class="w-full">
+                            <%- include("partials/card.ejs", { post }) %>
+                        </div>
+
+                        <% }) %>
+
                 </div>
 
-                <% } else { %>
+                <% } %>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+    </main>
 
-                        <% posts.forEach(post=> { %>
+    <%- include("partials/footer.ejs") %>
 
-                            <div class="w-full">
-                                <%- include("partials/card.ejs", { post }) %>
-                            </div>
+    <script src="/js/script.js"></script>
+    </body>
 
-                            <% }) %>
-
-                    </div>
-
-                    <% } %>
-
-        </main>
-
-        <script src="/js/script.js"></script>
-</body>
-
-</html>
+    </html>
