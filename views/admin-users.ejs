@@ -8,15 +8,13 @@
 
     <main class="mx-auto max-w-6xl px-5 py-10">
 
-        <div class="mb-8">
-            <h1 class="text-3xl font-bold text-slate-900">
-                Admin — User Management
-            </h1>
+        <h1 class="text-3xl font-bold text-slate-900">
+            Admin — User Management
+        </h1>
 
-            <p class="mt-2 text-slate-600">
-                View and manage registered Blogsy users.
-            </p>
-        </div>
+        <p class="mt-2 mb-8 text-slate-600">
+            View and manage registered Blogsy users.
+        </p>
 
         <div class="mb-5 rounded-lg border border-green-200 bg-green-50 p-4">
             <p class="font-semibold text-green-800">
@@ -32,6 +30,7 @@
                         <th class="px-5 py-4">Name</th>
                         <th class="px-5 py-4">Username</th>
                         <th class="px-5 py-4">Email</th>
+                        <th class="px-5 py-4">Action</th>
                     </tr>
                 </thead>
 
@@ -39,8 +38,7 @@
 
                     <% if (users.length === 0) { %>
                         <tr>
-                            <td colspan="4"
-                                class="px-5 py-8 text-center text-slate-500">
+                            <td colspan="5" class="px-5 py-8 text-center text-slate-500">
                                 No registered users found.
                             </td>
                         </tr>
@@ -48,20 +46,36 @@
 
                     <% users.forEach(function(account) { %>
                         <tr class="hover:bg-slate-50">
-                            <td class="px-5 py-4">
-                                <%= account.id %>
-                            </td>
+                            <td class="px-5 py-4"><%= account.id %></td>
+                            <td class="px-5 py-4"><%= account.name %></td>
+                            <td class="px-5 py-4"><%= account.username %></td>
+                            <td class="px-5 py-4"><%= account.email %></td>
 
                             <td class="px-5 py-4">
-                                <%= account.name %>
-                            </td>
+                                <% if (Number(account.id) === Number(user.id)) { %>
+                                    <span class="text-xs text-slate-500">
+                                        Your account
+                                    </span>
+                                <% } else { %>
+                                    <form
+                                        method="POST"
+                                        action="/admin/users/<%= account.id %>/delete"
+                                        onsubmit="return confirm('Permanently delete this user and their posts and comments? This cannot be undone.');"
+                                    >
+                                        <input
+                                            type="hidden"
+                                            name="_csrf"
+                                            value="<%= csrfToken %>"
+                                        >
 
-                            <td class="px-5 py-4">
-                                <%= account.username %>
-                            </td>
-
-                            <td class="px-5 py-4">
-                                <%= account.email %>
+                                        <button
+                                            type="submit"
+                                            class="rounded-lg bg-red-600 px-3 py-2 font-semibold text-white hover:bg-red-700"
+                                        >
+                                            Delete
+                                        </button>
+                                    </form>
+                                <% } %>
                             </td>
                         </tr>
                     <% }); %>
@@ -71,8 +85,7 @@
         </div>
 
         <div class="mt-6">
-            <a href="/"
-               class="font-semibold text-green-700 hover:text-green-900 hover:underline">
+            <a href="/" class="font-semibold text-green-700 hover:underline">
                 &larr; Back to Blogsy
             </a>
         </div>

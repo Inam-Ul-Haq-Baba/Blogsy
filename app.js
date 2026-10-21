@@ -97,15 +97,14 @@ const upload = multer({
             ));
         }
     }
-});
+})
 
 
-
-db.connect((err) => {
+db.query("SELECT 1", (err) => {
     if (err) {
-        console.error("Database connection failed : ", err.message)
+        console.error("Database connection failed:", err.message);
     } else {
-        console.log("Database Connection Successfull")
+        console.log("Database Connection Successful");
     }
 });
 
@@ -281,6 +280,112 @@ app.get("/admin/users", requireAdmin, async (req, res) => {
         res.status(500).send("Unable to load users.");
     }
 });
+
+// Admin: Permanently Delete a User
+app.post("/admin/users/:id/delete", requireAdmin,csrfSynchronisedProtection, async (req, res) => {
+        const userId = Number(req.params.id);
+
+        // Validate the user ID
+        if (!Number.isInteger(userId) || userId <= 0) {
+            return res.status(400).send("Invalid user ID.");
+        }
+
+        // Prevent the administrator from deleting their own account
+        if (userId === Number(req.session.userId)) {
+            return res.status(403).send(
+                "You cannot delete your own administrator account."
+            );
+        }
+
+        const client = await db.connect();
+
+        try {
+            await client.query("BEGIN");
+
+            // Confirm that the user exists
+            const userResult = await client.query(
+                "SELECT id FROM users WHERE id = $1 FOR UPDATE",
+                [userId]
+            );
+
+            if (userResult.rows.length === 0) {
+                await client.query("ROLLBACK");
+                return res.status(404).send("User not found.");
+            }
+
+            // Delete comments written by this user or attached to their posts
+            await client.query(
+                `DELETE FROM comments
+                 WHERE user_id = $1
+                    OR post_id IN (
+                        SELECT id FROM posts WHERE user_id = $1
+                    )`,
+                [userId]
+            );
+
+            // Delete likes associated with this user or their posts
+            await client.query(
+                `DELETE FROM post_likes
+                 WHERE user_id = $1
+                    OR post_id IN (
+                        SELECT id FROM posts WHERE user_id = $1
+                    )`,
+                [userId]
+            );
+
+            // Delete view records associated with this user or their posts
+            await client.query(
+                `DELETE FROM post_views
+                 WHERE user_id = $1
+                    OR post_id IN (
+                        SELECT id FROM posts WHERE user_id = $1
+                    )`,
+                [userId]
+            );
+
+            // Delete anonymous view records for their posts
+            await client.query(
+                `DELETE FROM post_anonymous_views
+                 WHERE post_id IN (
+                     SELECT id FROM posts WHERE user_id = $1
+                 )`,
+                [userId]
+            );
+
+            // Delete password-reset tokens
+            await client.query(
+                "DELETE FROM password_reset_tokens WHERE user_id = $1",
+                [userId]
+            );
+
+            // Delete the user's posts
+            await client.query(
+                "DELETE FROM posts WHERE user_id = $1",
+                [userId]
+            );
+
+            // Delete the user account
+            await client.query(
+                "DELETE FROM users WHERE id = $1",
+                [userId]
+            );
+
+            await client.query("COMMIT");
+
+            return res.redirect("/admin/users");
+        } catch (err) {
+            await client.query("ROLLBACK");
+
+            console.error("Admin user deletion failed:", err.message);
+
+            return res.status(500).send(
+                "Unable to delete this user. No database changes were saved."
+            );
+        } finally {
+            client.release();
+        }
+    }
+);
 
 
 const allCategories = [
