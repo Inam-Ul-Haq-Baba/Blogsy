@@ -227,8 +227,8 @@ app.use((req, res, next) => {
     next();
 });
 
-// Authentication Middleware
 
+// Authentication Middleware
 function requireLogin(req, res, next) {
     if (!req.session.userId) {
         // Return JSON for AJAX/fetch requests
@@ -245,6 +245,42 @@ function requireLogin(req, res, next) {
 
     next();
 }
+
+
+// Admin Authorization Middleware
+function requireAdmin(req, res, next) {
+    if (!req.session.userId) {
+        return res.redirect("/login");
+    }
+
+    const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+    const userEmail = req.session.userEmail?.trim().toLowerCase();
+
+    if (!adminEmail || !userEmail || userEmail !== adminEmail) {
+        return res.status(403).send("Access denied.");
+    }
+
+    next();
+}
+
+
+// Admin: View Registered Users
+app.get("/admin/users", requireAdmin, async (req, res) => {
+    try {
+        const result = await db.query(
+            `SELECT id, name, username, email
+             FROM users
+             ORDER BY id DESC`
+        );
+
+        res.render("admin-users.ejs", {
+            users: result.rows
+        });
+    } catch (err) {
+        console.error("Failed to fetch users:", err.message);
+        res.status(500).send("Unable to load users.");
+    }
+});
 
 
 const allCategories = [
