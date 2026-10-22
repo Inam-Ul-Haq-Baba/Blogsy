@@ -99,7 +99,6 @@ const upload = multer({
     }
 })
 
-
 db.query("SELECT 1", (err) => {
     if (err) {
         console.error("Database connection failed:", err.message);

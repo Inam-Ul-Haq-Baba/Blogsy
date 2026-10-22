@@ -570,12 +570,21 @@ video {
   inset: 0px;
 }
 
+.inset-y-0 {
+  top: 0px;
+  bottom: 0px;
+}
+
 .right-5 {
   right: 1.25rem;
 }
 
 .top-4 {
   top: 1rem;
+}
+
+.right-3 {
+  right: 0.75rem;
 }
 
 .z-50 {
@@ -1307,6 +1316,10 @@ video {
   padding-top: 2rem;
 }
 
+.pr-12 {
+  padding-right: 3rem;
+}
+
 .text-left {
   text-align: left;
 }
@@ -1711,6 +1724,11 @@ video {
 .hover\:text-white:hover {
   --tw-text-opacity: 1;
   color: rgb(255 255 255 / var(--tw-text-opacity, 1));
+}
+
+.hover\:text-slate-800:hover {
+  --tw-text-opacity: 1;
+  color: rgb(30 41 59 / var(--tw-text-opacity, 1));
 }
 
 .hover\:underline:hover {

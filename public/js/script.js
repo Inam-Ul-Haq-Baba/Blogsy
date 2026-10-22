@@ -184,3 +184,18 @@ if (likeButton) {
         }
     });
 }
+
+
+
+// Function for "Show Password"
+function togglePassword(inputId, button) {
+    const passwordInput = document.getElementById(inputId);
+    const isPasswordHidden = passwordInput.type === "password";
+
+    passwordInput.type = isPasswordHidden ? "text" : "password";
+
+    button.setAttribute(
+        "aria-label",
+        isPasswordHidden ? "Hide password" : "Show password"
+    );
+}
