@@ -281,109 +281,109 @@ app.get("/admin/users", requireAdmin, async (req, res) => {
 });
 
 // Admin: Permanently Delete a User
-app.post("/admin/users/:id/delete", requireAdmin,csrfSynchronisedProtection, async (req, res) => {
-        const userId = Number(req.params.id);
+app.post("/admin/users/:id/delete", requireAdmin, csrfSynchronisedProtection, async (req, res) => {
+    const userId = Number(req.params.id);
 
-        // Validate the user ID
-        if (!Number.isInteger(userId) || userId <= 0) {
-            return res.status(400).send("Invalid user ID.");
+    // Validate the user ID
+    if (!Number.isInteger(userId) || userId <= 0) {
+        return res.status(400).send("Invalid user ID.");
+    }
+
+    // Prevent the administrator from deleting their own account
+    if (userId === Number(req.session.userId)) {
+        return res.status(403).send(
+            "You cannot delete your own administrator account."
+        );
+    }
+
+    const client = await db.connect();
+
+    try {
+        await client.query("BEGIN");
+
+        // Confirm that the user exists
+        const userResult = await client.query(
+            "SELECT id FROM users WHERE id = $1 FOR UPDATE",
+            [userId]
+        );
+
+        if (userResult.rows.length === 0) {
+            await client.query("ROLLBACK");
+            return res.status(404).send("User not found.");
         }
 
-        // Prevent the administrator from deleting their own account
-        if (userId === Number(req.session.userId)) {
-            return res.status(403).send(
-                "You cannot delete your own administrator account."
-            );
-        }
-
-        const client = await db.connect();
-
-        try {
-            await client.query("BEGIN");
-
-            // Confirm that the user exists
-            const userResult = await client.query(
-                "SELECT id FROM users WHERE id = $1 FOR UPDATE",
-                [userId]
-            );
-
-            if (userResult.rows.length === 0) {
-                await client.query("ROLLBACK");
-                return res.status(404).send("User not found.");
-            }
-
-            // Delete comments written by this user or attached to their posts
-            await client.query(
-                `DELETE FROM comments
+        // Delete comments written by this user or attached to their posts
+        await client.query(
+            `DELETE FROM comments
                  WHERE user_id = $1
                     OR post_id IN (
                         SELECT id FROM posts WHERE user_id = $1
                     )`,
-                [userId]
-            );
+            [userId]
+        );
 
-            // Delete likes associated with this user or their posts
-            await client.query(
-                `DELETE FROM post_likes
+        // Delete likes associated with this user or their posts
+        await client.query(
+            `DELETE FROM post_likes
                  WHERE user_id = $1
                     OR post_id IN (
                         SELECT id FROM posts WHERE user_id = $1
                     )`,
-                [userId]
-            );
+            [userId]
+        );
 
-            // Delete view records associated with this user or their posts
-            await client.query(
-                `DELETE FROM post_views
+        // Delete view records associated with this user or their posts
+        await client.query(
+            `DELETE FROM post_views
                  WHERE user_id = $1
                     OR post_id IN (
                         SELECT id FROM posts WHERE user_id = $1
                     )`,
-                [userId]
-            );
+            [userId]
+        );
 
-            // Delete anonymous view records for their posts
-            await client.query(
-                `DELETE FROM post_anonymous_views
+        // Delete anonymous view records for their posts
+        await client.query(
+            `DELETE FROM post_anonymous_views
                  WHERE post_id IN (
                      SELECT id FROM posts WHERE user_id = $1
                  )`,
-                [userId]
-            );
+            [userId]
+        );
 
-            // Delete password-reset tokens
-            await client.query(
-                "DELETE FROM password_reset_tokens WHERE user_id = $1",
-                [userId]
-            );
+        // Delete password-reset tokens
+        await client.query(
+            "DELETE FROM password_reset_tokens WHERE user_id = $1",
+            [userId]
+        );
 
-            // Delete the user's posts
-            await client.query(
-                "DELETE FROM posts WHERE user_id = $1",
-                [userId]
-            );
+        // Delete the user's posts
+        await client.query(
+            "DELETE FROM posts WHERE user_id = $1",
+            [userId]
+        );
 
-            // Delete the user account
-            await client.query(
-                "DELETE FROM users WHERE id = $1",
-                [userId]
-            );
+        // Delete the user account
+        await client.query(
+            "DELETE FROM users WHERE id = $1",
+            [userId]
+        );
 
-            await client.query("COMMIT");
+        await client.query("COMMIT");
 
-            return res.redirect("/admin/users");
-        } catch (err) {
-            await client.query("ROLLBACK");
+        return res.redirect("/admin/users");
+    } catch (err) {
+        await client.query("ROLLBACK");
 
-            console.error("Admin user deletion failed:", err.message);
+        console.error("Admin user deletion failed:", err.message);
 
-            return res.status(500).send(
-                "Unable to delete this user. No database changes were saved."
-            );
-        } finally {
-            client.release();
-        }
+        return res.status(500).send(
+            "Unable to delete this user. No database changes were saved."
+        );
+    } finally {
+        client.release();
     }
+}
 );
 
 
@@ -601,7 +601,7 @@ app.get("/posts/:id", async (req, res) => {
         const post = updatedPostResult.rows[0];
 
         post.formattedContent = sanitizeHtml(
-        (post.content || "").replace(/&nbsp;|\u00A0/gi, " "),
+            (post.content || "").replace(/&nbsp;|\u00A0/gi, " "),
             {
                 allowedTags: [
                     "p", "br", "strong", "b", "em", "i", "u", "s",
@@ -741,6 +741,22 @@ app.post("/posts/:id/like", requireLogin, csrfSynchronisedProtection, async (req
 
 
 
+// Helper Method for ...
+function renderCreateForm(req, res, status, error, fieldErrors = {}) {
+    return res.status(status).render("create.ejs", {
+        error,
+        fieldErrors,
+        formData: {
+            title: req.body?.title || "",
+            category: req.body?.category || "",
+            description: req.body?.description || "",
+            content: req.body?.content || ""
+        }
+    });
+}
+
+
+
 app.get("/create", requireLogin, (req, res) => {
     res.render("create.ejs");
 });
@@ -760,9 +776,12 @@ app.post("/create", requireLogin, (req, res, next) => {
                 errorMessage = err.message;
             }
 
-            return res.status(400).render("create.ejs", {
-                error: errorMessage
-            });
+            return renderCreateForm(
+                req,
+                res,
+                400,
+                errorMessage
+            );
         }
 
         next();
@@ -838,9 +857,12 @@ app.post("/create", requireLogin, (req, res, next) => {
             ) {
                 await deleteTemporaryImage();
 
-                return res.status(400).render("create.ejs", {
-                    error: "The uploaded file is not a valid supported image."
-                });
+                return renderCreateForm(
+                    req,
+                    res,
+                    400,
+                    "The uploaded file is not a valid supported image."
+                );
             }
         }
 
@@ -872,39 +894,78 @@ app.post("/create", requireLogin, (req, res, next) => {
             }
         );
 
-        const category = (req.body.category || "")
-            .trim()
-            .toLowerCase()
-            .replace(/\b\w/g, char => char.toUpperCase());
+        const submittedCategory = (req.body.category || "").trim();
 
-        if (!title || !category || !description || !content) {
-            await deleteTemporaryImage();
+        const category = allCategories.find(
+            item => item.toLowerCase() === submittedCategory.toLowerCase()
+        ) || submittedCategory;
 
-            return res.status(400).render("create.ejs", {
-                error: "Please fill in all required fields."
-            });
+        const fieldErrors = {};
+
+        // Check required fields
+        if (!title) {
+            fieldErrors.title = "Please enter a blog title.";
         }
 
-        if (
-            title.length > 255 ||
-            category.length > 100 ||
-            description.length > 500 ||
-            content.length > 20000
-        ) {
+        if (!category) {
+            fieldErrors.category = "Please select a category.";
+        }
+
+        if (!description) {
+            fieldErrors.description = "Please enter a description.";
+        }
+
+        if (!content || !content.replace(/<[^>]*>/g, "").trim()) {
+            fieldErrors.content = "Please write your blog content.";
+        }
+
+        // Check character limits
+        if (title.length > 255) {
+            fieldErrors.title = "Title must not exceed 255 characters.";
+        }
+
+        if (category.length > 100) {
+            fieldErrors.category = "Category must not exceed 100 characters.";
+        }
+
+        if (description.length > 500) {
+            fieldErrors.description =
+                "Description must not exceed 500 characters.";
+        }
+
+        if (content.length > 20000) {
+            fieldErrors.content =
+                "Blog content must not exceed 20,000 characters.";
+        }
+
+        // If any validation fails, return the form with its entered values
+        if (Object.keys(fieldErrors).length > 0) {
             await deleteTemporaryImage();
 
-            return res.status(400).render("create.ejs", {
-                error: "One or more fields exceed the allowed length."
-            });
+            return renderCreateForm(
+                req,
+                res,
+                400,
+                "Please correct the highlighted fields.",
+                fieldErrors
+            );
         }
+
 
         if (!allCategories.includes(category)) {
             await deleteTemporaryImage();
 
-            return res.status(400).render("create.ejs", {
-                error: "Please select a valid category."
-            });
+            return renderCreateForm(
+                req,
+                res,
+                400,
+                "Please select a valid category.",
+                {
+                    category: "Please select a valid category."
+                }
+            );
         }
+
 
         const author = req.session.userName;
         const userId = req.session.userId;
