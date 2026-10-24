@@ -2324,6 +2324,7 @@ app.post(
             : "";
 
         let uploadedImage = null;
+        let uploadedImagePublicId = null;
 
         const cleanupUpload = async () => {
             if (!req.file) return;
@@ -2336,6 +2337,19 @@ app.post(
                 }
             }
         };
+
+
+        const cleanupCloudinaryImage = async () => {
+            if (!uploadedImagePublicId) return;
+
+            try {
+                await cloudinary.uploader.destroy(uploadedImagePublicId);
+                uploadedImagePublicId = null;
+            } catch (err) {
+                console.error("Cloudinary cleanup error:", err.message);
+            }
+        };
+
 
         const renderError = async (message) => {
             await cleanupUpload();
@@ -2456,7 +2470,19 @@ app.post(
                     );
                 }
 
-                uploadedImage = `/uploads/${req.file.filename}`;
+
+                const cloudinaryResult = await cloudinary.uploader.upload(
+                    req.file.path,
+                    {
+                        folder: "blogsy/profiles",
+                        resource_type: "image"
+                    }
+                );
+
+                uploadedImage = cloudinaryResult.secure_url;
+                uploadedImagePublicId = cloudinaryResult.public_id;
+                await cleanupUpload();
+
             }
 
             const result = await db.query(
@@ -2493,16 +2519,21 @@ app.post(
 
             if (result.rows.length === 0) {
                 await cleanupUpload();
+                await cleanupCloudinaryImage();
                 return res.status(404).send("User not found");
             }
 
             req.session.userName = result.rows[0].name;
             req.session.userEmail = result.rows[0].email;
 
+            uploadedImagePublicId = null;
+
             return res.redirect(`/profile/${userId}?updated=true`);
+
 
         } catch (err) {
             await cleanupUpload();
+            await cleanupCloudinaryImage();
 
             if (err.code === "23505") {
                 return res.status(409).send(
@@ -2513,6 +2544,7 @@ app.post(
             console.error("Update profile error:", err.message);
             return res.status(500).send("Unable to update profile.");
         }
+
     }
 );
 
